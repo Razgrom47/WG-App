@@ -12,28 +12,41 @@ WG App is a Flask-based web application for managing shared living (WG) tasks, u
 - Task lists and task management
 - Shopping list and item management
 - Budget planning and cost tracking
+- Interactive API documentation with Flasgger (Swagger UI)
 
 ---
 
 ## Project Structure
 
 ```
-wg-app/
+backend/
 ├── app.py                  # Application entry point
 ├── config.py               # Flask configuration
+├── decorators.py           # Custom decorators (e.g., authentication)
 ├── extensions.py           # Extensions (SQLAlchemy, Bcrypt, etc.)
 ├── requirements.txt        # Python dependencies
 ├── README.md               # Project documentation
-├── manage.py               # Migration and management script
-├── migrations/             # Database migration scripts
 ├── blueprints/             # Modular routes and views
 │   ├── __init__.py
-│   ├── auth.py             # Authentication routes
-│   └── user.py             # User management routes
+│   ├── auth.py             # Authentication routes (register, login)
+│   ├── user.py             # User management routes
+│   ├── wg.py               # WG (shared flat) structure and management
+│   ├── shopping_list.py    # Shopping list routes (per WG)
+│   ├── item.py             # Item routes (items within a shopping list)
+│   ├── budget_planning.py  # Budget planning routes (per WG)
+│   ├── cost.py             # Cost routes (costs within budget planning)
+│   ├── task_list.py        # Task list routes (per WG)
+│   ├── task.py             # Task routes (tasks within a task list)
 ├── models/                 # Database models
 │   └── __init__.py
-└── instance/
-    └── wg_app.db           # SQLite database file
+├── database/
+│   ├── create_db.py        # Script to initialize the database
+│   └── wg_app.db           # SQLite database file
+├── migrations/             # Database migration scripts (Alembic)
+│   ├── env.py
+│   ├── versions/
+│   └── ...
+└── __pycache__/            # Python cache files
 ```
 
 ---
@@ -46,6 +59,7 @@ wg-app/
 - Flask-Bcrypt
 - Flask-Migrate
 - Flask-CORS
+- Flasgger (Swagger UI)
 - SQLite
 
 ---
@@ -54,14 +68,14 @@ wg-app/
 
 ### Prerequisites
 
-- Python 3.x
+- Python 3.12.5
 - pip
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Razgrom47/WG-App.git 
    cd wg-app
    ```
 
@@ -96,7 +110,27 @@ wg-app/
    set FLASK_ENV=development
    flask run
    ```
-   The app will be available at [http://127.0.0.1:5000](http://127.0.0.1:5000).
+   The app will be available at [http://127.0.0.1:7700](http://127.0.0.1:7700).
+
+---
+
+## API Documentation
+
+- The API is organized using Flask blueprints.
+- See the `blueprints/` directory for route definitions and usage examples.
+- Main endpoints:
+  - `/auth` – User registration and login
+  - `/user` – User management
+  - `/wg` – WG (shared flat) structure and management (central entity, includes all related lists)
+  - `/shopping_list` – Shopping list management (per WG)
+  - `/item` – Item management (items within a shopping list)
+  - `/budget_planning` – Budget planning management (per WG)
+  - `/cost` – Cost management (costs within budget planning)
+  - `/task_list` – Task list management (per WG)
+  - `/task` – Task management (tasks within a task list)
+- Interactive API documentation is available via Flasgger (Swagger UI) at:
+  - [http://127.0.0.1:7700/apidocs/](http://127.0.0.1:7700/apidocs/)
+  - Or at `/apidocs` on your running server
 
 ---
 
@@ -119,17 +153,6 @@ wg-app/
 
 ---
 
-## API Documentation
-
-- The API is organized using Flask blueprints.
-- See the `blueprints/` directory for route definitions and usage examples.
-- Main endpoints:
-  - `/auth` – User registration and login
-  - `/user` – User management
-  - Additional endpoints for WGs, tasks, shopping lists, budgets, etc.
-
----
-
 ## Contributing
 
 Contributions are welcome! Please open issues or submit pull requests for improvements and bug fixes.
@@ -138,4 +161,4 @@ Contributions are welcome! Please open issues or submit pull requests for improv
 
 ## License
 
-This project is licensed under the
+This project is licensed under ...
