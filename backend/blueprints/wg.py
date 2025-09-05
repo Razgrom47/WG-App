@@ -5,6 +5,29 @@ from decorators import token_required
 
 wg_bp = Blueprint('wg_bp', __name__)
 
+def is_user_of_wg(user, wg_id):
+    wg = WG.query.get(wg_id)
+    return wg and user in wg.users
+
+def is_admin_of_wg(user, wg_id):
+    wg = WG.query.get(wg_id)
+    return wg and user in wg.admins
+
+def serialize_wg(wg):
+    return {
+        'id': wg.idWG,
+        'title': wg.title,
+        'address': wg.address,
+        'etage': wg.etage,
+        'description': wg.description,
+        'creator': {'id': wg.creator.idUser, 'name': wg.creator.strUser},
+        'users': [{'id': user.idUser, 'name': user.strUser} for user in wg.users],
+        'admins': [{'id': admin.idUser, 'name': admin.strUser} for admin in wg.admins],
+        'tasklists': [{'id': tasklist.idTaskList, 'title': tasklist.title} for tasklist in wg.tasklists],
+        'shoppinglists': [{'id': shoppinglist.idShoppingList, 'title': shoppinglist.title} for shoppinglist in wg.shoppinglists],
+        'budgetplannings': [{'id': budget.idBudgetPlanning, 'title': budget.title} for budget in wg.budgetplannings]
+    }
+
 @wg_bp.route('/wg', methods=['POST'])
 @token_required
 def create_wg():
@@ -76,7 +99,7 @@ def create_wg():
     new_wg.admins.append(creator)
     db.session.add(new_wg)
     db.session.commit()
-    return jsonify({'id': new_wg.idWG}), 201
+    return jsonify(serialize_wg(new_wg.idWG)), 201
 
 @wg_bp.route('/wg/<int:wg_id>', methods=['DELETE'])
 @token_required
@@ -293,15 +316,29 @@ def get_my_wgs():
       - BearerAuth: []
     responses:
       200:
-        description: List of user WGs
+        description: List of user WGs with detailed information
         content:
           application/json:
-            example: {"wg_ids": [1,2], "wg_titles": ["WG1", "WG2"]}
+            example: [
+              {
+                "id": 1,
+                "title": "MyWG",
+                "address": "Hauptstrasse 1",
+                "etage": "2",
+                "description": "A nice shared apartment",
+                "creator": {"id": 1, "name": "creator1"},
+                "users": [{"id": 2, "name": "user1"}, {"id": 3, "name": "user2"}],
+                "admins": [{"id": 1, "name": "creator1"}],
+                "tasklists": [{"id": 1, "title": "TaskList1"}],
+                "shoppinglists": [{"id": 1, "title": "ShoppingList1"}],
+                "budgetplannings": [{"id": 1, "title": "Budget1"}]
+              }
+            ]
     """
     user = g.current_user
-    wg_ids = [wg.idWG for wg in user.wgs]
-    wg_titles = [wg.title for wg in user.wgs]
-    return jsonify({'wg_ids': wg_ids, 'wg_titles':wg_titles}), 200
+    wgs = user.wgs  # Get all WGs the user is part of
+    serialized_wgs = [serialize_wg(wg) for wg in wgs]
+    return jsonify(serialized_wgs), 200
 
 @wg_bp.route('/wg/<int:wg_id>', methods=['GET'])
 @token_required
@@ -342,22 +379,12 @@ def get_wg_info(wg_id):
       404:
         description: WG not found
     """
-    user = g.current_user
     wg = WG.query.get(wg_id)
     if not wg:
         return jsonify({'message': 'WG not found'}), 404
-    if user not in wg.users and user != wg.creator:
+    if g.current_user not in wg.users and g.current_user != wg.creator:
         return jsonify({'message': 'Not authorized'}), 403
-    wg_info = {
-        'title': wg.title,
-        'address': wg.address,
-        'etage': wg.etage,
-        'description': wg.description,
-        'creator_id': wg.creator.strUser,
-        'user_names': [u.strUser for u in wg.users if u not in wg.admins],
-        'admin_names': [a.strUser for a in wg.admins if a != wg.creator]
-    }
-    return jsonify({'wg': wg_info}), 200
+    return jsonify(serialize_wg(wg)), 200
 
 @wg_bp.route('/wg/<int:wg_id>', methods=['PUT'])
 @token_required

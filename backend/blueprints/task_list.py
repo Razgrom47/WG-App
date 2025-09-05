@@ -5,13 +5,16 @@ from decorators import token_required
 
 task_list_bp = Blueprint('task_list_bp', __name__)
 
+
 def is_user_of_wg(user, wg_id):
     wg = WG.query.get(wg_id)
     return wg and user in wg.users
 
+
 def is_admin_of_wg(user, wg_id):
     wg = WG.query.get(wg_id)
     return wg and user in wg.admins
+
 
 def serialize_tasklist(tasklist):
     return {
@@ -34,6 +37,39 @@ def serialize_tasklist(tasklist):
             } for t in tasklist.tasks
         ]
     }
+
+
+@task_list_bp.route('/tasklist/<int:tasklist_id>', methods=['GET'])
+@token_required
+def get_task_list(tasklist_id):
+    """
+    Get a task list
+    ---
+    tags:
+      - TaskList
+    security:
+      - Bearer: []
+    parameters:
+      - name: tasklist_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: Task list retrieved successfully
+      403:
+        description: Not authorized
+      404:
+        description: Task list not found
+    """
+    task_list = TaskList.query.get(tasklist_id)
+    if not task_list:
+        return jsonify({'message': 'Task list not found'}), 404
+    if not (is_user_of_wg(g.current_user, task_list.wg_id) or is_admin_of_wg(g.current_user, task_list.wg_id)):
+        return jsonify({'message': 'Not authorized'}), 403
+    return jsonify(serialize_tasklist(task_list)), 200
+
 
 @task_list_bp.route('/tasklist', methods=['POST'])
 @token_required
@@ -79,9 +115,12 @@ def create_task_list():
         description=data.get('description'),
         wg_id=wg_id
     )
+    # Assign the creator to the task list
+    new_task_list.users.append(g.current_user)
     db.session.add(new_task_list)
     db.session.commit()
     return jsonify(serialize_tasklist(new_task_list)), 201
+
 
 @task_list_bp.route('/tasklist/<int:tasklist_id>', methods=['DELETE'])
 @token_required
@@ -115,6 +154,7 @@ def delete_task_list(tasklist_id):
     db.session.delete(task_list)
     db.session.commit()
     return jsonify({'message': 'Task list deleted successfully'}), 204
+
 
 @task_list_bp.route('/tasklist/<int:tasklist_id>/add_task', methods=['POST'])
 @token_required
@@ -161,6 +201,7 @@ def add_task(tasklist_id):
     db.session.add(task)
     db.session.commit()
     return jsonify({'id': task.idTask, 'title': task.title}), 201
+
 
 @task_list_bp.route('/tasklist/<int:tasklist_id>/add_task_from_template', methods=['POST'])
 @token_required
@@ -214,6 +255,7 @@ def add_task_from_template(tasklist_id):
         return jsonify({'id': new_task.idTask, 'title': new_task.title}), 201
     return jsonify({'message': 'Template task not found'}), 404
 
+
 @task_list_bp.route('/tasklist/create_template', methods=['POST'])
 @token_required
 def create_task_template():
@@ -250,11 +292,12 @@ def create_task_template():
     db.session.commit()
     return jsonify({'id': template_task.idTask, 'title': template_task.title}), 201
 
+
 @task_list_bp.route('/tasklist/<int:tasklist_id>/assign_users', methods=['POST'])
 @token_required
-def assign_users_to_task(tasklist_id):
+def assign_users_to_tasklist(tasklist_id):
     """
-    Assign users to a task
+    Assign users to a task list
     ---
     tags:
       - TaskList
@@ -273,37 +316,34 @@ def assign_users_to_task(tasklist_id):
           schema:
             type: object
             properties:
-              task_id:
-                type: integer
               user_ids:
                 type: array
                 items:
                   type: integer
     responses:
       200:
-        description: Users assigned to task successfully
+        description: Users assigned to task list successfully
       403:
         description: Not authorized
       404:
-        description: Task not found
+        description: Task list not found
     """
     task_list = TaskList.query.get(tasklist_id)
-    if not task_list or not is_user_of_wg(g.current_user, task_list.wg_id):
+    if not task_list:
+        return jsonify({'message': 'Task list not found'}), 404
+    if not is_admin_of_wg(g.current_user, task_list.wg_id):
         return jsonify({'message': 'Not authorized'}), 403
     data = request.get_json()
-    task = Task.query.get(data['task_id'])
-    if task and task.tasklist_id == tasklist_id:
-        users = User.query.filter(User.idUser.in_(data['user_ids'])).all()
-        task.users = users
-        db.session.commit()
-        return jsonify({'message': 'Users assigned to task successfully'}), 200
-    return jsonify({'message': 'Task not found'}), 404
+    users = User.query.filter(User.idUser.in_(data['user_ids'])).all()
+    task_list.users.extend(users)
+    db.session.commit()
+    return jsonify({'message': 'Users assigned to task list successfully'}), 200
 
-@task_list_bp.route('/tasklist/<int:tasklist_id>/check_task', methods=['POST'])
+@task_list_bp.route('/tasklist/<int:tasklist_id>/remove_users', methods=['POST'])
 @token_required
-def check_task(tasklist_id):
+def remove_users_from_tasklist(tasklist_id):
     """
-    Mark a task as done
+    Unassign users from a task list
     ---
     tags:
       - TaskList
@@ -322,26 +362,120 @@ def check_task(tasklist_id):
           schema:
             type: object
             properties:
-              task_id:
-                type: integer
+              user_ids:
+                type: array
+                items:
+                  type: integer
     responses:
       200:
-        description: Task checked successfully
+        description: Users unassigned from task list successfully
       403:
         description: Not authorized
       404:
-        description: Task not found
+        description: Task list not found
     """
     task_list = TaskList.query.get(tasklist_id)
-    if not task_list or not is_user_of_wg(g.current_user, task_list.wg_id):
+    if not task_list:
+        return jsonify({'message': 'Task list not found'}), 404
+    if not is_admin_of_wg(g.current_user, task_list.wg_id):
         return jsonify({'message': 'Not authorized'}), 403
     data = request.get_json()
-    task = Task.query.get(data['task_id'])
-    if task and task.tasklist_id == tasklist_id:
+    users = User.query.filter(User.idUser.in_(data['user_ids'])).all()
+    for user in users:
+        if user in task_list.users:
+            task_list.users.remove(user)
+    db.session.commit()
+    return jsonify({'message': 'Users unassigned from task list successfully'}), 200
+
+@task_list_bp.route('/tasklist/<int:tasklist_id>/check_tasklist', methods=['POST'])
+@token_required
+def check_tasklist(tasklist_id):
+    """
+    Mark a task list as checked and all its tasks as done
+    ---
+    tags:
+      - TaskList
+    security:
+      - Bearer: []
+    parameters:
+      - name: tasklist_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: Task list and tasks checked successfully
+      403:
+        description: Not authorized
+      404:
+        description: Task list not found
+    """
+    task_list = TaskList.query.get(tasklist_id)
+    if not task_list:
+        return jsonify({'message': 'Task list not found'}), 404
+
+    # Check if the user is part of the WG
+    if not is_user_of_wg(g.current_user, task_list.wg_id):
+        return jsonify({'message': 'Not authorized: User is not part of the WG'}), 403
+
+    # Check if the user is either in the task list's users or is an admin of the WG
+    if g.current_user not in task_list.users and not is_admin_of_wg(g.current_user, task_list.wg_id):
+        return jsonify({'message': 'Not authorized: User is not assigned to the task list or is not an admin'}), 403
+
+    # Mark the task list as checked
+    task_list.is_checked = True
+
+    # Mark all tasks in the task list as done
+    for task in task_list.tasks:
         task.is_done = True
-        db.session.commit()
-        return jsonify({'message': 'Task checked successfully'}), 200
-    return jsonify({'message': 'Task not found'}), 404
+
+    db.session.commit()
+    return jsonify({'message': 'Task list and tasks checked successfully'}), 200
+
+
+@task_list_bp.route('/tasklist/<int:tasklist_id>/uncheck_tasklist', methods=['POST'])
+@token_required
+def uncheck_tasklist(tasklist_id):
+    """
+    Uncheck a task list
+    ---
+    tags:
+      - TaskList
+    security:
+      - Bearer: []
+    parameters:
+      - name: tasklist_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: Task list unchecked successfully
+      403:
+        description: Not authorized
+      404:
+        description: Task list not found
+    """
+    task_list = TaskList.query.get(tasklist_id)
+    if not task_list:
+        return jsonify({'message': 'Task list not found'}), 404
+
+    # Check if the user is part of the WG
+    if not is_user_of_wg(g.current_user, task_list.wg_id):
+        return jsonify({'message': 'Not authorized: User is not part of the WG'}), 403
+
+    # Check if the user is either in the task list's users or is an admin of the WG
+    if g.current_user not in task_list.users and not is_admin_of_wg(g.current_user, task_list.wg_id):
+        return jsonify({'message': 'Not authorized: User is not assigned to the task list or is not an admin'}), 403
+
+    # Uncheck the task list
+    task_list.is_checked = False
+
+    db.session.commit()
+    return jsonify({'message': 'Task list unchecked successfully'}), 200
+
 
 @task_list_bp.route('/tasklist/<int:tasklist_id>', methods=['PUT'])
 @token_required
