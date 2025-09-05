@@ -33,6 +33,12 @@ user_shoppinglist = db.Table(
               db.ForeignKey('SHOPPINGLIST.idShoppingList'))
 )
 
+user_item = db.Table(
+    'user_item',
+    db.Column('user_id', db.Integer, db.ForeignKey('USERS.idUser')),
+    db.Column('item_id', db.Integer, db.ForeignKey('ITEM.idItem'))
+)
+
 user_budgetplanning = db.Table(
     'user_budgetplanning',
     db.Column('user_id', db.Integer, db.ForeignKey('USERS.idUser')),
@@ -62,6 +68,8 @@ class User(db.Model):
                             back_populates='users')
     shoppinglists = db.relationship(
         'ShoppingList', secondary=user_shoppinglist, back_populates='users')
+    items = db.relationship('Item', secondary=user_item,
+                            back_populates='users')
     budgetplannings = db.relationship(
         'BudgetPlanning', secondary=user_budgetplanning, back_populates='users')
     costs = db.relationship('Cost', secondary=user_cost,
@@ -78,10 +86,12 @@ class WG(db.Model):
     address = db.Column(db.String(255), nullable=False)
     etage = db.Column(db.String(20), nullable=False)
     description = db.Column(db.Text)
-    creator_id = db.Column(db.Integer, db.ForeignKey('USERS.idUser', name='fk_wg_creator'), nullable=False)
+    creator_id = db.Column(db.Integer, db.ForeignKey(
+        'USERS.idUser', name='fk_wg_creator'), nullable=False)
     creator = db.relationship('User', foreign_keys=[creator_id])
     users = db.relationship('User', secondary=user_wg, back_populates='wgs')
-    admins = db.relationship('User', secondary=admin_wg, back_populates='admin_wgs')
+    admins = db.relationship('User', secondary=admin_wg,
+                             back_populates='admin_wgs')
     shoppinglists = db.relationship(
         'ShoppingList', back_populates='wg', cascade="all, delete-orphan")
     tasklists = db.relationship(
@@ -93,6 +103,7 @@ class WG(db.Model):
         db.UniqueConstraint('address', 'etage', name='uq_wg_address_etage'),
     )
 
+
 class TaskList(db.Model):
     __tablename__ = 'TASKLIST'
     idTaskList = db.Column(db.Integer, primary_key=True)
@@ -103,9 +114,11 @@ class TaskList(db.Model):
     wg_id = db.Column(db.Integer, db.ForeignKey('WG.idWG'))
     wg = db.relationship('WG', back_populates='tasklists')
     users = db.relationship(
-        'User', secondary=user_tasklist, back_populates='tasklists')
+        'User', secondary=user_tasklist, back_populates='tasklists', cascade="all, delete"
+    )
     tasks = db.relationship(
-        'Task', back_populates='tasklist', cascade="all, delete-orphan")
+        'Task', back_populates='tasklist', cascade="all, delete-orphan"
+    )
 
 
 class Task(db.Model):
@@ -119,8 +132,9 @@ class Task(db.Model):
     is_template = db.Column(db.Boolean, default=False)
     tasklist_id = db.Column(db.Integer, db.ForeignKey('TASKLIST.idTaskList'))
     tasklist = db.relationship('TaskList', back_populates='tasks')
-    users = db.relationship('User', secondary=user_task,
-                            back_populates='tasks')
+    users = db.relationship(
+        'User', secondary=user_task, back_populates='tasks', cascade="all, delete"
+    )
 
 
 class ShoppingList(db.Model):
@@ -134,7 +148,7 @@ class ShoppingList(db.Model):
     wg_id = db.Column(db.Integer, db.ForeignKey('WG.idWG'))
     wg = db.relationship('WG', back_populates='shoppinglists')
     users = db.relationship(
-        'User', secondary=user_shoppinglist, back_populates='shoppinglists')
+        'User', secondary=user_shoppinglist, back_populates='shoppinglists', cascade="all, delete")
     items = db.relationship(
         'Item', back_populates='shoppinglist', cascade="all, delete-orphan")
 
@@ -148,6 +162,9 @@ class Item(db.Model):
     shoppinglist_id = db.Column(
         db.Integer, db.ForeignKey('SHOPPINGLIST.idShoppingList'))
     shoppinglist = db.relationship('ShoppingList', back_populates='items')
+    users = db.relationship(
+        'User', secondary=user_item, back_populates='items', cascade="all, delete"
+    )
 
 
 class BudgetPlanning(db.Model):
