@@ -58,6 +58,7 @@ class User(db.Model):
     idUser = db.Column(db.Integer, primary_key=True)
     strUser = db.Column(db.String(80), nullable=False)
     strPassword = db.Column(db.String(128), nullable=False)
+    strEmail = db.Column(db.String(128), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     wgs = db.relationship('WG', secondary=user_wg, back_populates='users')
     admin_wgs = db.relationship(
@@ -76,6 +77,7 @@ class User(db.Model):
                             back_populates='users')
     __table_args__ = (
         db.UniqueConstraint('strUser', name='uq_user_strUser'),
+        db.UniqueConstraint('strEmail', name='uq_user_strEmail'),
     )
 
 

@@ -10,3 +10,4 @@ class Config:
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'database', 'wg_app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     BCRYPT_LOG_ROUNDS = 13
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'this is a secret'

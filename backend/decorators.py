@@ -16,7 +16,7 @@ def token_required(f):
             return jsonify({'message': 'Token is missing!'}), 403
         try:
             data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
-            user = User.query.filter_by(strUser=data.get("user")).first()
+            user = User.query.filter_by(idUser=data.get("user_id"), strUser=data.get("username"), strEmail=data.get("email")).first()
             if not user:
                 return jsonify({'message': 'User not found!'}), 404
             # Save the authenticated user to g

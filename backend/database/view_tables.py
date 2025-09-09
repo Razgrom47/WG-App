@@ -36,6 +36,11 @@ def print_table(conn, table_name):
 with sqlite3.connect(db_path) as conn:
     print(f"Opened SQLite database with version {sqlite3.sqlite_version} successfully.")
 
+    # Update some entries
+    # conn.execute("DELETE FROM USERS;")
+    # conn.execute("UPDATE USERS SET idUser = 3733981 WHERE strUser = 'tim';")
+    # conn.commit()
+
     # Show existing tables
     tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
     # print("\n=== Tables in DB ===")

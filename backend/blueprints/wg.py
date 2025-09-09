@@ -5,13 +5,16 @@ from decorators import token_required
 
 wg_bp = Blueprint('wg_bp', __name__)
 
+
 def is_user_of_wg(user, wg_id):
     wg = WG.query.get(wg_id)
     return wg and user in wg.users
 
+
 def is_admin_of_wg(user, wg_id):
     wg = WG.query.get(wg_id)
     return wg and user in wg.admins
+
 
 def serialize_wg(wg):
     return {
@@ -27,6 +30,7 @@ def serialize_wg(wg):
         'shoppinglists': [{'id': shoppinglist.idShoppingList, 'title': shoppinglist.title} for shoppinglist in wg.shoppinglists],
         'budgetplannings': [{'id': budget.idBudgetPlanning, 'title': budget.title} for budget in wg.budgetplannings]
     }
+
 
 @wg_bp.route('/wg', methods=['POST'])
 @token_required
@@ -99,7 +103,12 @@ def create_wg():
     new_wg.admins.append(creator)
     db.session.add(new_wg)
     db.session.commit()
-    return jsonify(serialize_wg(new_wg.idWG)), 201
+    return jsonify({'title': new_wg.title,
+                    'address': new_wg.address,
+                    'etage': new_wg.etage,
+                    'description': new_wg.description,
+                    'creator': {'id': new_wg.creator.idUser, 'name': new_wg.creator.strUser}, }), 201
+
 
 @wg_bp.route('/wg/<int:wg_id>', methods=['DELETE'])
 @token_required
@@ -135,6 +144,7 @@ def delete_wg(wg_id):
     db.session.delete(wg)
     db.session.commit()
     return jsonify({'message': 'WG deleted successfully'}), 204
+
 
 @wg_bp.route('/wg/<int:wg_id>/invite', methods=['POST'])
 @token_required
@@ -192,6 +202,7 @@ def invite_user(wg_id):
     db.session.commit()
     return jsonify({'message': 'User invited successfully'}), 200
 
+
 @wg_bp.route('/wg/<int:wg_id>/kick', methods=['POST'])
 @token_required
 def kick_user(wg_id):
@@ -247,6 +258,7 @@ def kick_user(wg_id):
         wg.admins.remove(user)
     db.session.commit()
     return jsonify({'message': 'User kicked successfully'}), 200
+
 
 @wg_bp.route('/wg/<int:wg_id>/make_admin', methods=['POST'])
 @token_required
@@ -304,6 +316,7 @@ def make_user_admin(wg_id):
     db.session.commit()
     return jsonify({'message': 'User made admin successfully'}), 200
 
+
 @wg_bp.route('/wg/my', methods=['GET'])
 @token_required
 def get_my_wgs():
@@ -339,6 +352,7 @@ def get_my_wgs():
     wgs = user.wgs  # Get all WGs the user is part of
     serialized_wgs = [serialize_wg(wg) for wg in wgs]
     return jsonify(serialized_wgs), 200
+
 
 @wg_bp.route('/wg/<int:wg_id>', methods=['GET'])
 @token_required
@@ -385,6 +399,7 @@ def get_wg_info(wg_id):
     if g.current_user not in wg.users and g.current_user != wg.creator:
         return jsonify({'message': 'Not authorized'}), 403
     return jsonify(serialize_wg(wg)), 200
+
 
 @wg_bp.route('/wg/<int:wg_id>', methods=['PUT'])
 @token_required

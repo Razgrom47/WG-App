@@ -1,4 +1,5 @@
 # blueprints/user.py
+from sqlite3 import IntegrityError
 from flask import Blueprint, jsonify, request, current_app, g
 from extensions import db
 from decorators import token_required
@@ -26,7 +27,7 @@ def user():
     """
     user = g.current_user
     if user:
-        return jsonify({'user': {'username': user.strUser}})
+        return jsonify({'user': {'id':user.idUser, 'email':user.strEmail, 'username': user.strUser}})
     return jsonify({'user': None}), 404
 
 @user_bp.route('/user', methods=['PUT'])
@@ -49,22 +50,52 @@ def update_user():
               username:
                 type: string
                 example: new_username
+              email:
+                type: string
+                example: new_email@example.com
     responses:
       200:
         description: Successfully updated the user
         content:
           application/json:
-            example: {"id": 1, "username": "new_username"}
+            example: {"id": 1, "username": "new_username", "email":"email@email.com"}
+      400:
+        description: Invalid request or duplicate values
       404:
         description: User not found
     """
     user = g.current_user
-    if user:
-        data = request.get_json()
-        user.strUser = data.get('username', user.strUser)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
+
+    # Collect potential updates
+    new_username = data.get("username")
+    new_email = data.get("email")
+
+    if not new_username and not new_email:
+        return jsonify({"error": "No update fields provided"}), 400
+
+    # Apply updates only if provided
+    if new_username:
+        user.strUser = new_username.strip()
+    if new_email:
+        user.strEmail = new_email.strip()
+
+    try:
         db.session.commit()
-        return jsonify({'id': user.idUser, 'username': user.strUser})
-    return jsonify({'user': None}), 404
+    except IntegrityError as e:
+        db.session.rollback()
+        return jsonify({"error": "Username or email already exists"}), 400
+
+    return jsonify({
+        "id": user.idUser,
+        "username": user.strUser,
+        "email": user.strEmail
+    }), 200
 
 @user_bp.route('/user', methods=['DELETE'])
 @token_required
