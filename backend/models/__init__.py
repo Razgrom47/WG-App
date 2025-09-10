@@ -116,7 +116,7 @@ class TaskList(db.Model):
     wg_id = db.Column(db.Integer, db.ForeignKey('WG.idWG'))
     wg = db.relationship('WG', back_populates='tasklists')
     users = db.relationship(
-        'User', secondary=user_tasklist, back_populates='tasklists', cascade="all, delete"
+        'User', secondary=user_tasklist, back_populates='tasklists'
     )
     tasks = db.relationship(
         'Task', back_populates='tasklist', cascade="all, delete-orphan"
@@ -135,7 +135,7 @@ class Task(db.Model):
     tasklist_id = db.Column(db.Integer, db.ForeignKey('TASKLIST.idTaskList'))
     tasklist = db.relationship('TaskList', back_populates='tasks')
     users = db.relationship(
-        'User', secondary=user_task, back_populates='tasks', cascade="all, delete"
+        'User', secondary=user_task, back_populates='tasks'
     )
 
 
@@ -150,7 +150,7 @@ class ShoppingList(db.Model):
     wg_id = db.Column(db.Integer, db.ForeignKey('WG.idWG'))
     wg = db.relationship('WG', back_populates='shoppinglists')
     users = db.relationship(
-        'User', secondary=user_shoppinglist, back_populates='shoppinglists', cascade="all, delete")
+        'User', secondary=user_shoppinglist, back_populates='shoppinglists')
     items = db.relationship(
         'Item', back_populates='shoppinglist', cascade="all, delete-orphan")
 
@@ -165,7 +165,7 @@ class Item(db.Model):
         db.Integer, db.ForeignKey('SHOPPINGLIST.idShoppingList'))
     shoppinglist = db.relationship('ShoppingList', back_populates='items')
     users = db.relationship(
-        'User', secondary=user_item, back_populates='items', cascade="all, delete"
+        'User', secondary=user_item, back_populates='items'
     )
 
 

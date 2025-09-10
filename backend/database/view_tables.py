@@ -38,7 +38,7 @@ with sqlite3.connect(db_path) as conn:
 
     # Update some entries
     # conn.execute("DELETE FROM USERS;")
-    # conn.execute("UPDATE USERS SET idUser = 3733981 WHERE strUser = 'tim';")
+    # conn.execute("UPDATE USERS SET idUser = 3733981 WHERE strUser = 'admin';")
     # conn.commit()
 
     # Show existing tables
