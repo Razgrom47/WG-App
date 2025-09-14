@@ -260,11 +260,11 @@ def kick_user(wg_id):
     return jsonify({'message': 'User kicked successfully'}), 200
 
 
-@wg_bp.route('/wg/<int:wg_id>/make_admin', methods=['POST'])
+@wg_bp.route('/wg/<int:wg_id>/admin', methods=['POST'])
 @token_required
-def make_user_admin(wg_id):
+def toggle_user_admin(wg_id):
     """
-    Make a WG user an admin
+    Toggle a user's admin status in a WG.
     ---
     tags:
       - WG
@@ -289,7 +289,7 @@ def make_user_admin(wg_id):
                 example: 5
     responses:
       200:
-        description: User made admin successfully
+        description: Admin status toggled successfully
         content:
           application/json:
             example: {"message": "User made admin successfully"}
@@ -297,8 +297,6 @@ def make_user_admin(wg_id):
         description: Not authorized
       404:
         description: WG or user not found
-      409:
-        description: User already admin
     """
     wg = WG.query.get(wg_id)
     if not wg:
@@ -311,10 +309,13 @@ def make_user_admin(wg_id):
     if not user or user not in wg.users:
         return jsonify({'message': 'User not in WG'}), 404
     if user in wg.admins:
-        return jsonify({'message': 'User already admin'}), 409
-    wg.admins.append(user)
+        wg.admins.remove(user)
+        message = "User removed from admins successfully"
+    else:
+        wg.admins.append(user)
+        message = "User made admin successfully"
     db.session.commit()
-    return jsonify({'message': 'User made admin successfully'}), 200
+    return jsonify({'message': message}), 200
 
 
 @wg_bp.route('/wg/my', methods=['GET'])
