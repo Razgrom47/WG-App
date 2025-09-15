@@ -1,9 +1,12 @@
 # blueprints/user.py
+from datetime import datetime, timedelta
 from sqlite3 import IntegrityError
+from extensions import bcrypt
 from flask import Blueprint, jsonify, request, current_app, g
+import jwt
 from extensions import db
 from decorators import token_required
-from models import WG
+from models import WG, User
 
 user_bp = Blueprint('user_bp', __name__)
 
@@ -53,49 +56,93 @@ def update_user():
               email:
                 type: string
                 example: new_email@example.com
+              new_password:
+                type: string
+                example: new_secret123
     responses:
       200:
         description: Successfully updated the user
         content:
           application/json:
-            example: {"id": 1, "username": "new_username", "email":"email@email.com"}
+            example: {
+                "message": "Profile updated successfully",
+                "user": {
+                    "id": 1,
+                    "username": "new_username",
+                    "email": "new_email@example.com"
+                },
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
       400:
-        description: Invalid request or duplicate values
+        description: Invalid request or no data provided
+        content:
+          application/json:
+            example: {"message": "No data provided for update"}
       404:
         description: User not found
+        content:
+          application/json:
+            example: {"message": "User not found"}
+      409:
+        description: A user with the same username or email already exists
+        content:
+          application/json:
+            example: {"message": "Username already exists"}
     """
     user = g.current_user
     if not user:
-        return jsonify({"error": "User not found"}), 404
+        return jsonify({'message': 'User not found'}), 404
 
-    data = request.get_json(silent=True)
-    if not data:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
+    data = request.get_json()
+    new_username = data.get('username')
+    new_email = data.get('email')
+    new_password = data.get('new_password') # NEW: Get new password
 
-    # Collect potential updates
-    new_username = data.get("username")
-    new_email = data.get("email")
+    if not new_username and not new_email and not new_password: # NEW: Check for new_password
+        return jsonify({'message': 'No data provided for update'}), 400
 
-    if not new_username and not new_email:
-        return jsonify({"error": "No update fields provided"}), 400
+    # Check for username and email uniqueness if they are being updated
+    if new_username and new_username != user.strUser:
+        if User.query.filter_by(strUser=new_username).first():
+            return jsonify({'message': 'Username already exists'}), 409
+        user.strUser = new_username
+    
+    if new_email and new_email != user.strEmail:
+        if User.query.filter_by(strEmail=new_email).first():
+            return jsonify({'message': 'Email already exists'}), 409
+        user.strEmail = new_email
 
-    # Apply updates only if provided
-    if new_username:
-        user.strUser = new_username.strip()
-    if new_email:
-        user.strEmail = new_email.strip()
-
+    # NEW: Handle password change
+    if new_password:
+        if len(new_password) < 8: # Add a simple check for password length
+            return jsonify({'message': 'Password must be at least 8 characters long'}), 400
+        user.strPassword = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    
     try:
         db.session.commit()
-    except IntegrityError as e:
+        # Create a new token with the updated user information
+        token_payload = {
+            'user_id': user.idUser,
+            'username': user.strUser,
+            'email': user.strEmail,
+            'exp': datetime.utcnow() + timedelta(days=1)
+        }
+        new_token = jwt.encode(
+            token_payload,
+            current_app.config['SECRET_KEY'],
+            algorithm='HS256'
+        )
+        # Return the new token and the updated user data
+        return jsonify({
+            'message': 'Profile updated successfully',
+            'user': {'id': user.idUser, 'email': user.strEmail, 'username': user.strUser},
+            'token': new_token
+        }), 200
+    except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Username or email already exists"}), 400
+        return jsonify({'message': 'Failed to update profile', 'error': str(e)}), 500
 
-    return jsonify({
-        "id": user.idUser,
-        "username": user.strUser,
-        "email": user.strEmail
-    }), 200
+
 
 @user_bp.route('/user', methods=['DELETE'])
 @token_required

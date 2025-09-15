@@ -27,10 +27,14 @@ const wg_api = {
 
   // Join WG
   joinWG: (wgId) => api.post(`/user/join/${wgId}`),
-  
-  // Additional routes as per requirements
+
+  // Get all task lists for a WG
+  getTaskLists: (wgId) => api.get(`/wg/${wgId}/tasklists`),
+
+  // Get all budget plans for a WG
   getBudgetPlans: (wgId) => api.get(`/wg/${wgId}/budget`),
-  getTaskLists: (wgId) => api.get(`/wg/${wgId}/tasks`),
+
+  // Get all shopping lists for a WG
   getShoppingLists: (wgId) => api.get(`/wg/${wgId}/shopping`),
 
   // Admin-specific actions

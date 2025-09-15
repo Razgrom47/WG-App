@@ -80,8 +80,17 @@ const WGUpdate = () => {
     }
   };
   
-  const handleTransferOwnership = () => {
-    alert("Transfer ownership functionality to be implemented.");
+   const handleTransferOwnership = async () => {
+    const newCreatorId = prompt("Enter the ID of the user you want to make the new Creator:");
+    if (newCreatorId) {
+      try {
+        await wg_api.transferCreator(id, newCreatorId);
+        alert("Creator transferred successfully!");
+        fetchWG();
+      } catch (err) {
+        alert("Error: " + (err.response?.data?.message || "Failed to transfer creator"));
+      }
+    }
   };
 
   const handleDelete = async () => {

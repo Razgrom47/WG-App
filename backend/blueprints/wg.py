@@ -565,3 +565,42 @@ def transfer_creator(wg_id):
 
     db.session.commit()
     return jsonify({'message': 'Creator transferred successfully'}), 200
+
+@wg_bp.route('/wg/<int:wg_id>/tasklists', methods=['GET'])
+@token_required
+def get_tasklists_for_wg(wg_id):
+    """
+    Get all task lists for a specific WG.
+    ---
+    tags:
+      - WG
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: wg_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: List of task lists retrieved successfully
+      403:
+        description: Not authorized
+      404:
+        description: WG not found
+    """
+    wg = WG.query.get(wg_id)
+    if not wg:
+        return jsonify({'message': 'WG not found'}), 404
+
+    if not is_user_of_wg(g.current_user, wg_id):
+        return jsonify({'message': 'Not authorized'}), 403
+
+    tasklists = [{'id': tl.idTaskList,
+                  'title': tl.title,
+                  'is_checked': tl.is_checked,
+                  'date': tl.date,
+                  'users': [{'id': u.idUser, 'name': u.strUser} for u in tl.users]
+                  } for tl in wg.tasklists]
+    return jsonify({'tasklists': tasklists}), 200

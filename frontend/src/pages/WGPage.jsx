@@ -207,21 +207,21 @@ const WGPage = () => {
           )}
 
           <Link
-            to={`/wg/${id}/budget`}
+            to={`/wg/${id}/budget_plans`}
             className="flex flex-col items-center justify-center p-4 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors aspect-square text-sm sm:text-base"
           >
             <FaMoneyBillWave className="text-2xl sm:text-3xl" />
             <span className="mt-2 text-center">Budget Plans</span>
           </Link>
           <Link
-            to={`/wg/${id}/tasks`}
+            to={`/wg/${id}/task_lists`}
             className="flex flex-col items-center justify-center p-4 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition-colors aspect-square text-sm sm:text-base"
           >
             <FaTasks className="text-2xl sm:text-3xl" />
             <span className="mt-2 text-center">Task Lists</span>
           </Link>
           <Link
-            to={`/wg/${id}/shopping`}
+            to={`/wg/${id}/shopping_lists`}
             className="flex flex-col items-center justify-center p-4 rounded-lg bg-purple-500 text-white hover:bg-purple-600 transition-colors aspect-square text-sm sm:text-base"
           >
             <FaShoppingCart className="text-2xl sm:text-3xl" />

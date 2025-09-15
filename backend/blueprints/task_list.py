@@ -203,94 +203,94 @@ def add_task(tasklist_id):
     return jsonify({'id': task.idTask, 'title': task.title}), 201
 
 
-@task_list_bp.route('/tasklist/<int:tasklist_id>/add_task_from_template', methods=['POST'])
-@token_required
-def add_task_from_template(tasklist_id):
-    """
-    Add a task from a template to a task list
-    ---
-    tags:
-      - TaskList
-    security:
-      - Bearer: []
-    parameters:
-      - name: tasklist_id
-        in: path
-        required: true
-        schema:
-          type: integer
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              template_id:
-                type: integer
-    responses:
-      201:
-        description: Task created from template
-      403:
-        description: Not authorized
-      404:
-        description: Template task not found
-    """
-    task_list = TaskList.query.get(tasklist_id)
-    if not task_list or not is_user_of_wg(g.current_user, task_list.wg_id):
-        return jsonify({'message': 'Not authorized'}), 403
-    data = request.get_json()
-    template_task = Task.query.get(data['template_id'])
-    if template_task and template_task.is_template:
-        new_task = Task(
-            title=template_task.title,
-            description=template_task.description,
-            tasklist_id=tasklist_id,
-            start_date=template_task.start_date,
-            end_date=template_task.end_date,
-            is_template=False
-        )
-        db.session.add(new_task)
-        db.session.commit()
-        return jsonify({'id': new_task.idTask, 'title': new_task.title}), 201
-    return jsonify({'message': 'Template task not found'}), 404
+# @task_list_bp.route('/tasklist/<int:tasklist_id>/add_task_from_template', methods=['POST'])
+# @token_required
+# def add_task_from_template(tasklist_id):
+#     """
+#     Add a task from a template to a task list
+#     ---
+#     tags:
+#       - TaskList
+#     security:
+#       - Bearer: []
+#     parameters:
+#       - name: tasklist_id
+#         in: path
+#         required: true
+#         schema:
+#           type: integer
+#     requestBody:
+#       required: true
+#       content:
+#         application/json:
+#           schema:
+#             type: object
+#             properties:
+#               template_id:
+#                 type: integer
+#     responses:
+#       201:
+#         description: Task created from template
+#       403:
+#         description: Not authorized
+#       404:
+#         description: Template task not found
+#     """
+#     task_list = TaskList.query.get(tasklist_id)
+#     if not task_list or not is_user_of_wg(g.current_user, task_list.wg_id):
+#         return jsonify({'message': 'Not authorized'}), 403
+#     data = request.get_json()
+#     template_task = Task.query.get(data['template_id'])
+#     if template_task and template_task.is_template:
+#         new_task = Task(
+#             title=template_task.title,
+#             description=template_task.description,
+#             tasklist_id=tasklist_id,
+#             start_date=template_task.start_date,
+#             end_date=template_task.end_date,
+#             is_template=False
+#         )
+#         db.session.add(new_task)
+#         db.session.commit()
+#         return jsonify({'id': new_task.idTask, 'title': new_task.title}), 201
+#     return jsonify({'message': 'Template task not found'}), 404
 
 
-@task_list_bp.route('/tasklist/create_template', methods=['POST'])
-@token_required
-def create_task_template():
-    """
-    Create a new task template
-    ---
-    tags:
-      - TaskList
-    security:
-      - Bearer: []
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              title:
-                type: string
-              description:
-                type: string
-    responses:
-      201:
-        description: Task template created
-    """
-    data = request.get_json()
-    # Any user can create a template
-    template_task = Task(
-        title=data['title'],
-        description=data.get('description'),
-        is_template=True
-    )
-    db.session.add(template_task)
-    db.session.commit()
-    return jsonify({'id': template_task.idTask, 'title': template_task.title}), 201
+# @task_list_bp.route('/tasklist/create_template', methods=['POST'])
+# @token_required
+# def create_task_template():
+#     """
+#     Create a new task template
+#     ---
+#     tags:
+#       - TaskList
+#     security:
+#       - Bearer: []
+#     requestBody:
+#       required: true
+#       content:
+#         application/json:
+#           schema:
+#             type: object
+#             properties:
+#               title:
+#                 type: string
+#               description:
+#                 type: string
+#     responses:
+#       201:
+#         description: Task template created
+#     """
+#     data = request.get_json()
+#     # Any user can create a template
+#     template_task = Task(
+#         title=data['title'],
+#         description=data.get('description'),
+#         is_template=True
+#     )
+#     db.session.add(template_task)
+#     db.session.commit()
+#     return jsonify({'id': template_task.idTask, 'title': template_task.title}), 201
 
 
 @task_list_bp.route('/tasklist/<int:tasklist_id>/assign_users', methods=['POST'])

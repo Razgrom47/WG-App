@@ -9,29 +9,41 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Use the baseURL from your api.js for consistency
   const baseURL = api.defaults.baseURL;
 
-  // Validate token on app load by getting user info
+  // NEW: Function to handle profile updates and new token from the backend
+  const updateUser = async (formData) => {
+    try {
+      const res = await api.put("/user", formData);
+      if (res.data?.token && res.data?.user) {
+        localStorage.setItem("token", res.data.token);
+        setToken(res.data.token);
+        setUser(res.data.user);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Update failed", err);
+      throw err; // Re-throw the error to be handled by the component
+    }
+  };
+
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
     if (storedToken) {
-      // Use the api instance for validation, which automatically includes the token in headers
       api
-        .get(`/user`) // CHANGED: Now using the /user endpoint for validation
+        .get(`/user`)
         .then((res) => {
           if (res.data?.user) {
             setToken(storedToken);
             setUser(res.data.user);
           } else {
-            // Token is invalid or user not found, remove it
             localStorage.removeItem("token");
             setToken(null);
             setUser(null);
           }
         })
         .catch(() => {
-          // Validation failed (e.g., network error, 401 Unauthorized), remove token
           localStorage.removeItem("token");
           setToken(null);
           setUser(null);
@@ -42,18 +54,17 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Login: Authenticates user and stores token
   const login = async (identifier, password) => {
     try {
-      const res = await axios.post(`${baseURL}/login`, { identifier, password });
-
+      const res = await axios.post(
+        `${baseURL}/login`,
+        { identifier, password },
+        { headers: { "Content-Type": "application/json" } }
+      );
       if (res.data?.token) {
-        const newToken = res.data.token;
-        localStorage.setItem("token", newToken);
-        setToken(newToken);
-        
-        // After successful login, immediately get the user's data to validate the new token
-        const userRes = await api.get(`/user`); // CHANGED: Now using the /user endpoint
+        localStorage.setItem("token", res.data.token);
+        setToken(res.data.token);
+        const userRes = await api.get(`/user`);
         if (userRes.data?.user) {
           setUser(userRes.data.user);
           return true;
@@ -66,7 +77,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Register
   const register = async (username, email, password) => {
     try {
       const res = await axios.post(
@@ -81,11 +91,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout: Clears the token from state and localStorage
   const logout = async () => {
     try {
       if (token) {
-        // This is a placeholder for a backend-side logout if needed
         await api.post(`/logout`, {});
       }
     } catch (err) {
@@ -98,15 +106,20 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = {
-    token,
     user,
+    token,
     loading,
     login,
-    register,
     logout,
+    register,
+    updateUser, // Make the new updateUser function available
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);
