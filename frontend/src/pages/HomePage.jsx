@@ -2,16 +2,18 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Link } from "react-router-dom";
 import WGManagement from "../components/WGManagement";
-import wg_api from "../services/wg_api"; // New: Import the dedicated WG API service
+import wg_api from "../services/wg_api";
+import { FaSignOutAlt, FaPlus, FaDoorOpen } from "react-icons/fa";
 
 const HomePage = () => {
   const { user, logout } = useAuth();
   const [wgs, setWgs] = useState([]);
+  const [joinWgId, setJoinWgId] = useState("");
 
   useEffect(() => {
     const fetchWGs = async () => {
       try {
-        const res = await wg_api.getWGs(); // New: Use wg_api to fetch WGs
+        const res = await wg_api.getWGs();
         setWgs(res.data);
       } catch (err) {
         console.error("Failed to fetch WGs:", err);
@@ -22,6 +24,22 @@ const HomePage = () => {
 
   const handleWGCreate = (newWG) => {
     setWgs([...wgs, newWG]);
+  };
+
+  const handleJoinWG = async (e) => {
+    e.preventDefault();
+    try {
+      if (joinWgId) {
+        await wg_api.joinWG(joinWgId);
+        alert("You have successfully joined the WG!");
+        setJoinWgId("");
+        const res = await wg_api.getWGs();
+        setWgs(res.data);
+      }
+    } catch (err) {
+      alert("Error: " + (err.response?.data?.message || "Failed to join shared apartment"));
+      console.error(err);
+    }
   };
 
   return (
@@ -62,6 +80,28 @@ const HomePage = () => {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
           <h2 className="text-2xl font-semibold mb-4 border-b-2 border-gray-200 dark:border-gray-700 pb-2">Create New Shared Apartment</h2>
           <WGManagement onCreated={handleWGCreate} />
+        </div>
+
+        {/* NEW: Join WG Section */}
+        <div className="md:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+          <h2 className="text-2xl font-semibold mb-4 border-b-2 border-gray-200 dark:border-gray-700 pb-2">Join an Existing Shared Apartment</h2>
+          <form onSubmit={handleJoinWG} className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <input
+              type="text"
+              placeholder="Enter WG ID"
+              value={joinWgId}
+              onChange={(e) => setJoinWgId(e.target.value)}
+              className="w-full sm:w-auto flex-1 p-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+            <button
+              type="submit"
+              className="w-full sm:w-auto flex items-center justify-center px-6 py-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+            >
+              <FaDoorOpen className="mr-2" />
+              Join Shared Apartment
+            </button>
+          </form>
         </div>
       </div>
     </div>

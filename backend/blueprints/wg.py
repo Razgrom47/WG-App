@@ -23,6 +23,7 @@ def serialize_wg(wg):
         'address': wg.address,
         'etage': wg.etage,
         'description': wg.description,
+        'is_public': wg.is_public,
         'creator': {'id': wg.creator.idUser, 'name': wg.creator.strUser},
         'users': [{'id': user.idUser, 'name': user.strUser} for user in wg.users],
         'admins': [{'id': admin.idUser, 'name': admin.strUser} for admin in wg.admins],
@@ -465,6 +466,7 @@ def update_wg(wg_id):
     address = data.get('address')
     etage = data.get('etage')
     description = data.get('description')
+    is_public = data.get('is_public')
 
     # Check for unique constraints if title or address/etage are being changed
     if title and title != wg.title:
@@ -480,5 +482,86 @@ def update_wg(wg_id):
     if description is not None:
         wg.description = description
 
+    if is_public is not None:
+            wg.is_public = is_public
+
     db.session.commit()
     return jsonify({'message': 'WG updated successfully'}), 200
+
+
+@wg_bp.route('/wg/<int:wg_id>/transfer_creator', methods=['POST'])
+@token_required
+def transfer_creator(wg_id):
+    """
+    Transfer creator rights of a WG to another user.
+    ---
+    tags:
+      - WG
+    security:
+      - BearerAuth: []
+    parameters:
+      - in: path
+        name: wg_id
+        required: true
+        schema:
+          type: integer
+        description: The ID of the WG
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              userId:
+                type: integer
+                example: 123
+                description: The ID of the user who will become the new creator
+    responses:
+      200:
+        description: Creator transferred successfully
+        content:
+          application/json:
+            example: {"message": "Creator transferred successfully"}
+      400:
+        description: User ID is required
+      403:
+        description: Not authorized, only the current creator can transfer ownership
+      404:
+        description: WG or new creator user not found
+      409:
+        description: New creator is not a member of this WG or is already the creator
+    """
+    wg = WG.query.get(wg_id)
+    if not wg:
+        return jsonify({'message': 'WG not found'}), 404
+
+    if g.current_user != wg.creator:
+        return jsonify({'message': 'Only the current creator can transfer ownership'}), 403
+
+    data = request.get_json()
+    new_creator_id = data.get('user_id')
+    if not new_creator_id:
+        return jsonify({'message': 'User ID is required'}), 400
+
+    new_creator = User.query.get(new_creator_id)
+    if not new_creator:
+        return jsonify({'message': 'New creator user not found'}), 404
+
+    if new_creator not in wg.users:
+        return jsonify({'message': 'New creator is not a member of this WG'}), 409
+    
+    if new_creator == wg.creator:
+        return jsonify({'message': 'The selected user is already the creator'}), 409
+        
+    old_creator = wg.creator
+    wg.creator = new_creator
+    
+    # Add old creator to admins list, remove new creator from admins
+    if old_creator not in wg.admins:
+        wg.admins.append(old_creator)
+    if new_creator in wg.admins:
+        wg.admins.remove(new_creator)
+
+    db.session.commit()
+    return jsonify({'message': 'Creator transferred successfully'}), 200

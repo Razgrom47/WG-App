@@ -88,6 +88,7 @@ class WG(db.Model):
     address = db.Column(db.String(255), nullable=False)
     etage = db.Column(db.String(20), nullable=False)
     description = db.Column(db.Text)
+    is_public = db.Column(db.Boolean, default=True)
     creator_id = db.Column(db.Integer, db.ForeignKey(
         'USERS.idUser', name='fk_wg_creator'), nullable=False)
     creator = db.relationship('User', foreign_keys=[creator_id])

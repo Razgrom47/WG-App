@@ -5,6 +5,7 @@ import AuthPage from "./pages/AuthPage";
 import HomePage from "./pages/HomePage";
 import WGPage from "./pages/WGPage";
 import ProfilePage from "./pages/ProfilePage";
+import WGUpdate from "./pages/WGUpdate"; // New: Import WGManagement component
 import { useEffect, useState } from "react";
 
 // A new Layout component to wrap pages that should have the theme toggle
@@ -71,7 +72,7 @@ function App() {
         }
       />
       {/* New Protected Routes for WG Management Sections */}
-      <Route path="/wg/:id/manage" element={<ProtectedRoute> {/* Add a new ManageWGPage */} </ProtectedRoute>} />
+      <Route path="/wg/:id/manage" element={<ProtectedRoute><WGUpdate /></ProtectedRoute>} />
       <Route path="/wg/:id/budget" element={<ProtectedRoute> {/* Add a new BudgetPage */} </ProtectedRoute>} />
       <Route path="/wg/:id/tasks" element={<ProtectedRoute> {/* Add a new TaskPage */} </ProtectedRoute>} />
       <Route path="/wg/:id/shopping" element={<ProtectedRoute> {/* Add a new ShoppingPage */} </ProtectedRoute>} />

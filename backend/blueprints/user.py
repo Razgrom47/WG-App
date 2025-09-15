@@ -145,15 +145,26 @@ def join_wg(wg_id):
             example: {"message": "User joined WG successfully"}
       404:
         description: WG not found or user not available
+      409:
+        description: WG is not public or user is already a member
     """
     user = g.current_user
     if user:
         wg = WG.query.get(wg_id)
-        if wg:
-            wg.users.append(user)
-            db.session.commit()
-            return jsonify({'message': 'User joined WG successfully'}), 200
-        return jsonify({'message': 'WG not found'}), 404
+        if not wg:
+            return jsonify({'message': 'WG not found'}), 404
+
+        # Check if the user is already a member
+        if user in wg.users:
+            return jsonify({'message': 'User is already a member of this WG'}), 409
+
+        # NEW: Check if the WG is public
+        if not wg.is_public:
+            return jsonify({'message': 'This WG is private and requires an invitation to join.'}), 409
+        
+        wg.users.append(user)
+        db.session.commit()
+        return jsonify({'message': 'User joined WG successfully'}), 200
     return jsonify({'user': None}), 404
 
 @user_bp.route('/user/leave/<int:wg_id>', methods=['POST'])

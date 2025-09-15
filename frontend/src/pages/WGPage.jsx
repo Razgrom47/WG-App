@@ -13,6 +13,7 @@ import {
   FaUserCog,
   FaUserSlash,
   FaEllipsisV,
+  FaPlus,
 } from "react-icons/fa";
 
 const WGPage = () => {
@@ -23,6 +24,7 @@ const WGPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [menuDirection, setMenuDirection] = useState({});
   const menuRefs = useRef({});
 
   const fetchWG = async () => {
@@ -94,11 +96,54 @@ const WGPage = () => {
       }
     }
   };
-  
-  const handleMenuToggle = (userId) => {
-    setOpenMenuId(openMenuId === userId ? null : userId);
+
+  const handleInviteUser = async () => {
+    const userId = prompt("Enter the User ID to invite:");
+    if (userId) {
+      try {
+        await wg_api.inviteUser(id, userId);
+        alert("User invited successfully!");
+        fetchWG();
+      } catch (err) {
+        console.error("Failed to invite user:", err);
+        alert(
+          err.response?.data?.message ||
+            "Failed to invite user. Please try again."
+        );
+      }
+    }
   };
 
+  const handleLeaveWG = async () => {
+    if (window.confirm("Are you sure you want to leave this shared apartment?")) {
+      try {
+        await wg_api.leaveWG(id);
+        alert("You have successfully left the shared apartment.");
+        navigate("/");
+      } catch (err) {
+        console.error("Failed to leave WG:", err);
+        alert(
+          err.response?.data?.message || "Failed to leave WG. Please try again."
+        );
+      }
+    }
+  };
+
+  const handleMenuToggle = (userId) => {
+    const el = menuRefs.current[userId];
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const menuHeightEstimate = 100;
+
+      if (rect.bottom + menuHeightEstimate > viewportHeight) {
+        setMenuDirection((prev) => ({ ...prev, [userId]: "up" }));
+      } else {
+        setMenuDirection((prev) => ({ ...prev, [userId]: "down" }));
+      }
+    }
+    setOpenMenuId(openMenuId === userId ? null : userId);
+  };
 
   if (loading) {
     return (
@@ -143,13 +188,24 @@ const WGPage = () => {
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-4 mt-6 border-t pt-4 border-gray-200 dark:border-gray-700 sm:grid-cols-4">
-          <Link
-            to={`/wg/${id}/manage`}
-            className="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors aspect-square text-sm sm:text-base"
-          >
-            <FaUsers className="text-2xl sm:text-3xl" />
-            <span className="mt-2 text-center">Manage WG</span>
-          </Link>
+          {isCurrentUserAdmin ? (
+            <Link
+              to={`/wg/${id}/manage`}
+              className="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors aspect-square text-sm sm:text-base"
+            >
+              <FaUsers className="text-2xl sm:text-3xl" />
+              <span className="mt-2 text-center">Manage WG</span>
+            </Link>
+          ) : (
+            <button
+              disabled
+              className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-400 text-gray-700 cursor-not-allowed aspect-square text-sm sm:text-base"
+            >
+              <FaUsers className="text-2xl sm:text-3xl" />
+              <span className="mt-2 text-center">Manage WG</span>
+            </button>
+          )}
+
           <Link
             to={`/wg/${id}/budget`}
             className="flex flex-col items-center justify-center p-4 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors aspect-square text-sm sm:text-base"
@@ -173,9 +229,20 @@ const WGPage = () => {
           </Link>
         </div>
 
-        {/* Member List */}
+        {/* Member List with Add Button */}
         <div className="mt-6 border-t pt-4 border-gray-200 dark:border-gray-700">
-          <h3 className="text-xl font-semibold mb-4">Members:</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold">Members:</h3>
+            {isCurrentUserAdmin && (
+              <button
+                onClick={handleInviteUser}
+                className="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
+              >
+                <FaPlus className="mr-2" />
+                Add
+              </button>
+            )}
+          </div>
           <ul className="space-y-3">
             {wg.users.map((u) => (
               <li
@@ -185,7 +252,7 @@ const WGPage = () => {
                 <div className="flex items-center space-x-3">
                   <FaUsers className="text-gray-500 dark:text-gray-400" />
                   <span>{u.name}</span>
-                  {isAdmin(u.id) && (
+                  {isAdmin(u.id) && !isCreator(u.id) && (
                     <span className="text-sm text-gray-500 dark:text-gray-400 italic">
                       (Admin)
                     </span>
@@ -197,7 +264,10 @@ const WGPage = () => {
                   )}
                 </div>
                 {isCurrentUserAdmin && user.id !== u.id && !isCreator(u.id) && (
-                  <div className="relative" ref={(el) => (menuRefs.current[u.id] = el)}>
+                  <div
+                    className="relative"
+                    ref={(el) => (menuRefs.current[u.id] = el)}
+                  >
                     <button
                       onClick={() => handleMenuToggle(u.id)}
                       className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -205,7 +275,14 @@ const WGPage = () => {
                       <FaEllipsisV />
                     </button>
                     {openMenuId === u.id && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg py-1 z-10">
+                      <div
+                        className={`absolute right-0 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg py-1 z-10
+                          ${
+                            menuDirection[u.id] === "up"
+                              ? "bottom-full mb-2"
+                              : "top-full mt-2"
+                          }`}
+                      >
                         <button
                           onClick={() => handleToggleAdmin(u.id)}
                           className={`w-full text-left flex items-center px-4 py-2 text-sm ${
@@ -234,16 +311,16 @@ const WGPage = () => {
         </div>
 
         {/* Leave WG Button */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={() =>
-              alert("Leave WG functionality to be implemented.")
-            }
-            className="flex items-center justify-center mx-auto px-6 py-3 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
-          >
-            <FaSignOutAlt className="mr-2" /> Leave Shared Apartment
-          </button>
-        </div>
+        {user && wg && !isCreator(user.id) && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={handleLeaveWG}
+              className="flex items-center justify-center mx-auto px-6 py-3 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+            >
+              <FaSignOutAlt className="mr-2" /> Leave Shared Apartment
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
