@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Blueprint, request, jsonify, g
 from extensions import db
 from models import TaskList, Task, User, WG
@@ -193,10 +194,21 @@ def add_task(tasklist_id):
     if not task_list or not is_user_of_wg(g.current_user, task_list.wg_id):
         return jsonify({'message': 'Not authorized'}), 403
     data = request.get_json()
+    # Convert start_date and end_date to datetime objects
+    try:
+        start_date = datetime.fromisoformat(data['start_date']) if 'start_date' in data else None
+        end_date = datetime.fromisoformat(data['end_date']) if 'end_date' in data else None
+    except ValueError:
+        return jsonify({'message': 'Invalid date format. Use ISO 8601 format.'}), 400
+
     task = Task(
         title=data['title'],
         description=data.get('description'),
-        tasklist_id=tasklist_id
+        tasklist_id=tasklist_id,
+        start_date=start_date,
+        end_date=end_date,
+        is_done=False,
+        is_template=False,
     )
     db.session.add(task)
     db.session.commit()

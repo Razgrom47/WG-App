@@ -11,7 +11,7 @@ def is_user_of_wg(user, wg_id):
 
 def is_admin_of_wg(user, wg_id):
     wg = WG.query.get(wg_id)
-    return wg and user in wg.admins
+    return wg and (user in wg.admins or g.current_user == wg.creator)
 
 def serialize_budgetplanning(bp):
     return {
