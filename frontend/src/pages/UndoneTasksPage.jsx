@@ -1,24 +1,17 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import task_list_api from "../services/task_list_api";
-import wg_api from "../services/wg_api";
 import task_api from "../services/task_api";
-import {
-  FaArrowLeft,
-  FaEllipsisV,
-  FaEdit,
-  FaUserPlus,
-  FaTrash,
-  FaPlus
-} from "react-icons/fa";
+import wg_api from "../services/wg_api";
+import { FaArrowLeft, FaEllipsisV, FaEdit, FaUserPlus, FaTrash } from "react-icons/fa";
 import { MdOutlineCheckBoxOutlineBlank, MdOutlineCheckBox } from "react-icons/md";
 
-const TaskListDetailPage = () => {
-  const { id } = useParams();
+const UndoneTasksPage = () => {
+  const { id } = useParams(); // wg_id
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [taskList, setTaskList] = useState(null);
+
+  const [tasks, setTasks] = useState([]);
   const [wg, setWg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,19 +19,18 @@ const TaskListDetailPage = () => {
   const [menuDirection, setMenuDirection] = useState({});
   const menuRefs = useRef({});
 
-  const fetchTaskListAndWG = async () => {
+  const fetchUndoneTasks = async () => {
     try {
       setLoading(true);
-      const taskListRes = await task_list_api.getTaskList(id);
-      const fetchedTaskList = taskListRes.data;
-      setTaskList(fetchedTaskList);
-
-      const wgRes = await wg_api.getWG(fetchedTaskList.wg_id);
+      const [wgRes, tasksRes] = await Promise.all([
+        wg_api.getWG(id),
+        task_api.getUndoneTasksForWG(id),
+      ]);
       setWg(wgRes.data);
-
+      setTasks(tasksRes.data);
       setError(null);
     } catch (err) {
-      console.error("Failed to load task list or WG data:", err);
+      console.error("Failed to load undone tasks:", err);
       setError("Failed to load data.");
     } finally {
       setLoading(false);
@@ -46,7 +38,7 @@ const TaskListDetailPage = () => {
   };
 
   useEffect(() => {
-    fetchTaskListAndWG();
+    fetchUndoneTasks();
   }, [id]);
 
   useEffect(() => {
@@ -78,24 +70,6 @@ const TaskListDetailPage = () => {
     return task.users.some((u) => u.id === user.id);
   };
 
-  const handleCreateTask = async () => {
-    const title = prompt("Enter the title for the new task:");
-    if (!title) return;
-
-    const description = prompt("Enter the description for the new task:") || "";
-    const startDate = prompt("Enter start date (YYYY-MM-DD):") || null;
-    const endDate = prompt("Enter end date (YYYY-MM-DD):") || null;
-
-    try {
-      await task_list_api.createTask(id, { title, description, startDate, endDate });
-      await fetchTaskListAndWG();
-      setOpenMenuId(null);
-    } catch (err) {
-      console.error("Failed to create task:", err);
-      alert("Failed to create task. Please try again.");
-    }
-  };
-
   const handleUpdateTask = async (taskId, currentTitle, currentDescription, currentStart, currentEnd) => {
     const title = prompt("Enter the new title:", currentTitle);
     if (!title) return;
@@ -106,7 +80,7 @@ const TaskListDetailPage = () => {
 
     try {
       await task_api.updateTask(taskId, { title, description, startDate, endDate });
-      await fetchTaskListAndWG();
+      await fetchUndoneTasks();
       setOpenMenuId(null);
     } catch (err) {
       console.error("Failed to update task:", err);
@@ -120,7 +94,7 @@ const TaskListDetailPage = () => {
     ) {
       try {
         await task_api.deleteTask(taskId);
-        await fetchTaskListAndWG();
+        await fetchUndoneTasks();
         setOpenMenuId(null);
       } catch (err) {
         console.error("Failed to delete task:", err);
@@ -132,7 +106,7 @@ const TaskListDetailPage = () => {
   const handleToggleCheckTask = async (task) => {
     try {
       await task_api.checkTask(task.id);
-      await fetchTaskListAndWG();
+      await fetchUndoneTasks();
       setOpenMenuId(null);
     } catch (err) {
       console.error("Failed to toggle task check status:", err);
@@ -141,7 +115,6 @@ const TaskListDetailPage = () => {
   };
 
   const handleAssignUsersToTask = async (taskId, currentUsers) => {
-    // Pre-fill with existing user IDs
     const currentIds = currentUsers.map((u) => u.id).join(", ");
     const userIdsInput = prompt("Edit user IDs (comma-separated):", currentIds);
 
@@ -154,7 +127,7 @@ const TaskListDetailPage = () => {
       try {
         await task_api.updateTask(taskId, { user_ids: userIds });
         alert("Users updated successfully!");
-        await fetchTaskListAndWG();
+        await fetchUndoneTasks();
         setOpenMenuId(null);
       } catch (err) {
         console.error("Failed to update users:", err);
@@ -187,7 +160,7 @@ const TaskListDetailPage = () => {
     );
   }
 
-  if (error || !taskList || !wg) {
+  if (error || !wg) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
         <p>{error}</p>
@@ -201,54 +174,32 @@ const TaskListDetailPage = () => {
         <button onClick={() => navigate(-1)} className="text-xl">
           <FaArrowLeft />
         </button>
-        <h1 className="text-2xl font-bold">{taskList.title}</h1>
-        {isCurrentUserAdmin() && (
-          <button
-            onClick={handleCreateTask}
-            className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-          >
-            <FaPlus className="mr-2" /> New
-          </button>
-        )}
+        <h1 className="text-2xl font-bold">Undone Tasks</h1>
+        
       </header>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <p className="text-sm text-gray-400 mt-4">
-          Created on: {new Date(taskList.date).toLocaleDateString()}
-        </p>
-        <p className="text-lg font-semibold mb-2">Description:</p>
-        <p className="text-gray-600 dark:text-gray-300">
-          {taskList.description || "No description provided."}
-        </p>
-        <p className="text-lg font-semibold mb-2">Assigned Users:</p>
-        {taskList.users && taskList.users.length > 0 ? (
-          <ul className="list-disc list-inside text-gray-600 dark:text-gray-300">
-            {taskList.users.map((u) => (
-              <li key={u.id}>{u.name}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-500 dark:text-gray-400">No users assigned.</p>
-        )}
-      </div>
+            <p className="text-lg font-semibold mb-2">Description:</p>
+            <p className="text-gray-600 dark:text-gray-300">
+            All undone tasks of current user, "{user.username}" ,  in the WG,  "{wg.title}".
+            </p>
+        </div>
+        <h2 className="text-xl font-bold mb-4">Tasks</h2>
 
-      <h2 className="text-xl font-bold mb-4">Tasks</h2>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-        {taskList.tasks.length === 0 ? (
+        {tasks.length === 0 ? (
           <p className="text-center text-gray-500 dark:text-gray-400">
-            No tasks found in this list.
+            No undone tasks found.
           </p>
         ) : (
           <ul className="space-y-4">
-            {taskList.tasks.map((task) => {
+            {tasks.map((task) => {
               const userIsAssigned = isUserAssignedToTask(task);
               const userIsAdmin = isCurrentUserAdmin();
               const cardClass = `p-4 rounded-lg transition-colors ${
                 userIsAssigned || userIsAdmin
-                  ? task.is_done
-                    ? "bg-green-100 dark:bg-green-800"
-                    : "bg-gray-50 dark:bg-gray-700"
+                  ? "bg-gray-50 dark:bg-gray-700"
                   : "bg-gray-200 dark:bg-gray-600 cursor-not-allowed"
               }`;
 
@@ -266,9 +217,10 @@ const TaskListDetailPage = () => {
                           End: {task.endDate ? new Date(task.endDate).toLocaleDateString() : "N/A"}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-                          Assigned: {task.users.map(u => u.name).join(", ") || "None"}
+                          Assigned: {task.users.map((u) => u.name).join(", ") || "None"}
                         </p>
                       </div>
+
                       {(userIsAdmin || userIsAssigned) && (
                         <div
                           className="relative ml-2"
@@ -283,11 +235,7 @@ const TaskListDetailPage = () => {
                           {openMenuId === task.id && (
                             <div
                               className={`absolute right-0 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg z-10
-                                ${
-                                  menuDirection[task.id] === "up"
-                                    ? "bottom-full mb-2"
-                                    : "top-full mt-2"
-                                }`}
+                                ${menuDirection[task.id] === "up" ? "bottom-full mb-2" : "top-full mt-2"}`}
                             >
                               {/* Check/Uncheck - Available to both admins and assigned users */}
                               <button
@@ -311,22 +259,19 @@ const TaskListDetailPage = () => {
                                     }
                                     className="w-full text-left flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900"
                                   >
-                                    <FaEdit className="mr-2" />
-                                    Update
+                                    <FaEdit className="mr-2" /> Update
                                   </button>
                                   <button
                                     onClick={() => handleAssignUsersToTask(task.id, task.users)}
                                     className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900"
                                   >
-                                    <FaUserPlus className="mr-2" />
-                                    Assign Users
+                                    <FaUserPlus className="mr-2" /> Assign Users
                                   </button>
                                   <button
                                     onClick={() => handleDeleteTask(task.id)}
                                     className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
                                   >
-                                    <FaTrash className="mr-2" />
-                                    Delete
+                                    <FaTrash className="mr-2" /> Delete
                                   </button>
                                 </>
                               )}
@@ -346,4 +291,4 @@ const TaskListDetailPage = () => {
   );
 };
 
-export default TaskListDetailPage;
+export default UndoneTasksPage;

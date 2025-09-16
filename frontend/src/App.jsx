@@ -9,6 +9,7 @@ import WGUpdate from "./pages/WGUpdate"; // New: Import WGManagement component
 import { useEffect, useState } from "react";
 import TaskListPage from "./pages/TaskListPage"; 
 import TaskListDetailPage from "./pages/TaskListDetailPage"; 
+import UndoneTasksPage from "./pages/UndoneTasksPage";
 
 // A new Layout component to wrap pages that should have the theme toggle
 const Layout = ({ children }) => {
@@ -79,6 +80,7 @@ function App() {
       <Route path="/wg/:id/task_lists" element={<ProtectedRoute>  <TaskListPage/> </ProtectedRoute>} />
       <Route path="/wg/:id/shopping_lists" element={<ProtectedRoute> {/* Add a new ShoppingPage */} </ProtectedRoute>} />
       <Route path="/tasklist/:id" element={<ProtectedRoute><TaskListDetailPage /></ProtectedRoute>} />
+      <Route path="/wg/:id/undone-tasks" element={<ProtectedRoute><UndoneTasksPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

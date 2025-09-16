@@ -20,6 +20,9 @@ const task_list_api = {
   assignUsersToTaskList: (tasklistId, userIds) =>
     api.post(`/tasklist/${tasklistId}/assign_users`, { user_ids: userIds }),
 
+  removeUsersFromTaskList: (tasklistId, userIds) =>
+  api.post(`/tasklist/${tasklistId}/remove_users`, { user_ids: userIds }),
+
   createTask: (taskListId, taskData) => {
     return api.post(`/tasklist/${taskListId}/add_task`, taskData);
   },

@@ -13,8 +13,8 @@ const task_api = {
   checkTask: (taskId) => {
     return api.post(`/task/${taskId}/check`);
   },
-  assignUsersToTask: (taskId, userIds) => {
-    return api.post(`/task/${taskId}/assign`, { user_ids: userIds });
+  getUndoneTasksForWG: (wgId) => {
+    return api.get(`/tasks/undone/wg/${wgId}`);
   },
 };
 

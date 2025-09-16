@@ -190,7 +190,7 @@ def invite_user(wg_id):
     wg = WG.query.get(wg_id)
     if not wg:
         return jsonify({'message': 'WG not found'}), 404
-    if g.current_user not in wg.admins:
+    if g.current_user not in wg.admins and g.current_user is not wg.creator:
         return jsonify({'message': 'Not authorized'}), 403
     data = request.get_json()
     user_id = data.get('user_id')
@@ -245,7 +245,7 @@ def kick_user(wg_id):
     wg = WG.query.get(wg_id)
     if not wg:
         return jsonify({'message': 'WG not found'}), 404
-    if g.current_user not in wg.admins:
+    if g.current_user not in wg.admins and g.current_user is not wg.creator:
         return jsonify({'message': 'Not authorized'}), 403
     data = request.get_json()
     user_id = data.get('user_id')

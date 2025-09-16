@@ -121,9 +121,10 @@ const TaskListPage = () => {
     }
   };
 
-  const handleAssignUsers = async (tasklistId) => {
+  const handleAssignUsers = async (tasklistId, currentUsers) => {
+    const currentIds = currentUsers.map((u) => u.id).join(", ");
     const userIdsInput = prompt(
-      "Enter user IDs to assign (comma-separated):"
+      "Enter user IDs to assign (comma-separated):", currentIds
     );
     if (userIdsInput) {
       const userIds = userIdsInput.split(",").map((id) => parseInt(id.trim())).filter(id => !isNaN(id));
@@ -136,6 +137,32 @@ const TaskListPage = () => {
         } catch (err) {
           console.error("Failed to assign users:", err);
           alert("Failed to assign users. Please try again.");
+        }
+      } else {
+        alert("No valid user IDs entered.");
+      }
+    }
+  };
+  const handleUnassignUsers = async (tasklistId, currentUsers) => {
+    const currentIds = currentUsers.map((u) => u.id).join(", ");
+    const userIdsInput = prompt(
+      "Enter user IDs to unassign (comma-separated):", currentIds
+    );
+    if (userIdsInput) {
+      const userIds = userIdsInput
+        .split(",")
+        .map((id) => parseInt(id.trim()))
+        .filter((id) => !isNaN(id));
+
+      if (userIds.length > 0) {
+        try {
+          await task_list_api.removeUsersFromTaskList(tasklistId, userIds);
+          alert("Users unassigned successfully!");
+          await fetchWGAndTaskLists();
+          setOpenMenuId(null);
+        } catch (err) {
+          console.error("Failed to unassign users:", err);
+          alert("Failed to unassign users. Please try again.");
         }
       } else {
         alert("No valid user IDs entered.");
@@ -198,7 +225,6 @@ const TaskListPage = () => {
           </button>
         )}
       </header>
-
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
         {taskLists.length === 0 ? (
           <p className="text-center text-gray-500 dark:text-gray-400">
@@ -206,6 +232,16 @@ const TaskListPage = () => {
           </p>
         ) : (
           <ul className="space-y-4">
+            <li>
+              <Link
+                to={`/wg/${id}/undone-tasks`}
+                className="block p-4 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+              >
+                <span className="text-gray-900 dark:text-white font-medium">
+                  My Undone Tasks
+                </span>
+              </Link>
+            </li>
             {sortedTaskLists.map((taskList) => {
               const userIsMember = isUserOfTaskList(taskList);
               const linkClass = `block p-4 rounded-lg transition-colors ${
@@ -278,11 +314,18 @@ const TaskListPage = () => {
                               {taskList.is_checked ? "Uncheck" : "Check"}
                             </button>
                             <button
-                              onClick={() => handleAssignUsers(taskList.id)}
+                              onClick={() => handleAssignUsers(taskList.id, taskList.users)}
                               className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900"
                             >
                               <FaUserPlus className="mr-2" />
                               Assign Users
+                            </button>
+                            <button
+                              onClick={() => handleUnassignUsers(taskList.id, taskList.users)}
+                              className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900"
+                            >
+                              <FaUserPlus className="mr-2 rotate-180" />
+                              Unassign Users
                             </button>
                             <button
                               onClick={() => handleDeleteTaskList(taskList.id)}
