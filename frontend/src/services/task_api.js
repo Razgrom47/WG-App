@@ -16,6 +16,12 @@ const task_api = {
   getUndoneTasksForWG: (wgId) => {
     return api.get(`/tasks/undone/wg/${wgId}`);
   },
+  assignUsersToTask: (taskId, userIds) => {
+    return api.post(`/task/${taskId}/assign_users`, { user_ids: userIds });
+  },
+  removeUsersFromTask: (taskId, userIds) => {
+    return api.post(`/task/${taskId}/remove_users`, { user_ids: userIds });
+  },
 };
 
 export default task_api;

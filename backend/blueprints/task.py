@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, g
 from extensions import db
-from models import Task, TaskList, User, WG
+from models import Task, TaskList, User, WG, user_task
 from decorators import token_required
 from datetime import datetime
 
@@ -432,3 +432,143 @@ def check_task(task_id):
           tasklist.is_checked = True
       db.session.commit()
       return jsonify({'message': 'Task marked as done'}), 200
+    
+
+@task_bp.route('/task/<int:task_id>/assign_users', methods=['POST'])
+@token_required
+def assign_users_to_task(task_id):
+    """
+    Assign users to a task
+    ---
+    tags:
+      - Task
+    security:
+      - Bearer: []
+    parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              user_ids:
+                type: array
+                items:
+                  type: integer
+    responses:
+      200:
+        description: Users assigned to task successfully
+      403:
+        description: Not authorized
+      404:
+        description: Task not found
+    """
+    task = Task.query.get(task_id)
+    if not task:
+        return jsonify({'message': 'Task not found'}), 404
+    
+    tasklist = TaskList.query.get(task.tasklist_id)
+    if not is_admin_of_wg(g.current_user, tasklist.wg_id):
+        return jsonify({'message': 'Not authorized'}), 403
+
+    try:
+        data = request.get_json()
+        user_ids = data.get('user_ids', [])
+        
+        # Add users to the task
+        users_to_add = User.query.filter(User.idUser.in_(user_ids)).all()
+        task.users.extend(users_to_add)
+        db.session.commit()
+        
+        # Also add them to the tasklist if they aren't already
+        for user_id in user_ids:
+            if not any(u.idUser == user_id for u in tasklist.users):
+                user_to_add = User.query.get(user_id)
+                if user_to_add:
+                    tasklist.users.append(user_to_add)
+        db.session.commit()
+        return jsonify({'message': 'Users assigned to task successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': f'Error assigning users to task: {str(e)}'}), 500
+
+@task_bp.route('/task/<int:task_id>/remove_users', methods=['POST'])
+@token_required
+def remove_users_from_task(task_id):
+    """
+    Unassign users from a task
+    ---
+    tags:
+      - Task
+    security:
+      - Bearer: []
+    parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              user_ids:
+                type: array
+                items:
+                  type: integer
+    responses:
+      200:
+        description: Users unassigned from task successfully
+      403:
+        description: Not authorized
+      404:
+        description: Task not found
+    """
+    task = Task.query.get(task_id)
+    if not task:
+        return jsonify({'message': 'Task not found'}), 404
+    
+    tasklist = TaskList.query.get(task.tasklist_id)
+    if not is_admin_of_wg(g.current_user, tasklist.wg_id):
+        return jsonify({'message': 'Not authorized'}), 403
+    
+    data = request.get_json()
+    user_ids_to_remove = data.get('user_ids', [])
+
+    if not user_ids_to_remove:
+        return jsonify({'message': 'No user IDs provided'}), 400
+
+    try:
+        # Remove users from the task
+        db.session.query(user_task).filter(
+            user_task.c.task_id == task_id,
+            user_task.c.user_id.in_(user_ids_to_remove)
+        ).delete(synchronize_session=False)
+        db.session.commit()
+        
+        # Check if removed users should be removed from tasklist
+        for user_id in user_ids_to_remove:
+            user_in_tasklist = False
+            for other_task in tasklist.tasks:
+                if other_task.idTask != task_id and any(u.idUser == user_id for u in other_task.users):
+                    user_in_tasklist = True
+                    break
+            
+            if not user_in_tasklist:
+                user_to_remove = User.query.get(user_id)
+                if user_to_remove and user_to_remove in tasklist.users:
+                    tasklist.users.remove(user_to_remove)
+        db.session.commit()
+        return jsonify({'message': 'Users unassigned from task successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': f'Error unassigning users from task: {str(e)}'}), 500

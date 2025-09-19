@@ -9,7 +9,8 @@ import {
   FaTrash,
   FaUserPlus,
   FaEllipsisV,
-  FaEdit
+  FaEdit,
+  FaTimes,
 } from "react-icons/fa";
 import { MdOutlineCheckBoxOutlineBlank, MdOutlineCheckBox } from "react-icons/md";
 
@@ -24,6 +25,13 @@ const TaskListPage = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [menuDirection, setMenuDirection] = useState({});
   const menuRefs = useRef({});
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [currentTaskListToAssign, setCurrentTaskListToAssign] = useState(null);
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [newTaskListTitle, setNewTaskListTitle] = useState("");
+  const [newTaskListDescription, setNewTaskListDescription] = useState("");
+  const [newTaskListDate, setNewTaskListDate] = useState("");
 
   const fetchWGAndTaskLists = async () => {
     try {
@@ -60,17 +68,31 @@ const TaskListPage = () => {
     return taskList.users.some((u) => u.id === user.id);
   };
 
-  const handleCreateTaskList = async () => {
-    const title = prompt("Enter the title for the new task list:");
-    if (title) {
-      try {
-        await task_list_api.createTaskList(id, { title });
-        await fetchWGAndTaskLists();
-        setOpenMenuId(null); 
-      } catch (err) {
-        console.error("Failed to create task list:", err);
-        alert("Failed to create task list. Please try again.");
-      }
+  const handleCreateTaskList = () => {
+    setCreateModalOpen(true);
+  };
+
+  const handleSaveNewTaskList = async () => {
+    if (!newTaskListTitle) {
+      alert("Please enter a title for the new task list.");
+      return;
+    }
+
+    try {
+      const taskListData = {
+        title: newTaskListTitle,
+        description: newTaskListDescription,
+        date: newTaskListDate || null,
+      };
+      await task_list_api.createTaskList(id, taskListData);
+      await fetchWGAndTaskLists();
+      setCreateModalOpen(false);
+      setNewTaskListTitle("");
+      setNewTaskListDescription("");
+      setNewTaskListDate("");
+    } catch (err) {
+      console.error("Failed to create task list:", err);
+      alert("Failed to create task list. Please try again.");
     }
   };
 
@@ -81,7 +103,7 @@ const TaskListPage = () => {
       try {
         await task_list_api.updateTaskList(tasklistId, { title, description });
         await fetchWGAndTaskLists();
-        setOpenMenuId(null); 
+        setOpenMenuId(null);
       } catch (err) {
         console.error("Failed to update task list:", err);
         alert("Failed to update task list. Please try again.");
@@ -98,7 +120,7 @@ const TaskListPage = () => {
       try {
         await task_list_api.deleteTaskList(tasklistId);
         await fetchWGAndTaskLists();
-        setOpenMenuId(null); 
+        setOpenMenuId(null);
       } catch (err) {
         console.error("Failed to delete task list:", err);
         alert("Failed to delete task list. Please try again.");
@@ -114,60 +136,51 @@ const TaskListPage = () => {
         await task_list_api.checkTaskList(taskList.id);
       }
       await fetchWGAndTaskLists();
-      setOpenMenuId(null); 
+      setOpenMenuId(null);
     } catch (err) {
       console.error("Failed to toggle task list check status:", err);
       alert("Failed to toggle task list check status. Please try again.");
     }
   };
 
-  const handleAssignUsers = async (tasklistId, currentUsers) => {
-    const currentIds = currentUsers.map((u) => u.id).join(", ");
-    const userIdsInput = prompt(
-      "Enter user IDs to assign (comma-separated):", currentIds
-    );
-    if (userIdsInput) {
-      const userIds = userIdsInput.split(",").map((id) => parseInt(id.trim())).filter(id => !isNaN(id));
-      if (userIds.length > 0) {
-        try {
-          await task_list_api.assignUsersToTaskList(tasklistId, userIds);
-          alert("Users assigned successfully!");
-          await fetchWGAndTaskLists();
-          setOpenMenuId(null); 
-        } catch (err) {
-          console.error("Failed to assign users:", err);
-          alert("Failed to assign users. Please try again.");
-        }
-      } else {
-        alert("No valid user IDs entered.");
-      }
-    }
+  const openAssignModal = (taskList) => {
+    setCurrentTaskListToAssign(taskList);
+    setSelectedUserIds(taskList.users.map(u => u.id));
+    setAssignModalOpen(true);
+    setOpenMenuId(null);
   };
-  const handleUnassignUsers = async (tasklistId, currentUsers) => {
-    const currentIds = currentUsers.map((u) => u.id).join(", ");
-    const userIdsInput = prompt(
-      "Enter user IDs to unassign (comma-separated):", currentIds
-    );
-    if (userIdsInput) {
-      const userIds = userIdsInput
-        .split(",")
-        .map((id) => parseInt(id.trim()))
-        .filter((id) => !isNaN(id));
 
-      if (userIds.length > 0) {
-        try {
-          await task_list_api.removeUsersFromTaskList(tasklistId, userIds);
-          alert("Users unassigned successfully!");
-          await fetchWGAndTaskLists();
-          setOpenMenuId(null);
-        } catch (err) {
-          console.error("Failed to unassign users:", err);
-          alert("Failed to unassign users. Please try again.");
-        }
-      } else {
-        alert("No valid user IDs entered.");
+  const handleToggleUserSelection = (userId) => {
+    setSelectedUserIds(prevSelectedUserIds =>
+      prevSelectedUserIds.includes(userId)
+        ? prevSelectedUserIds.filter(id => id !== userId)
+        : [...prevSelectedUserIds, userId]
+    );
+  };
+
+  const handleSaveAssignments = async () => {
+    const currentAssignedIds = currentTaskListToAssign.users.map(u => u.id);
+    const usersToAssign = selectedUserIds.filter(id => !currentAssignedIds.includes(id));
+    const usersToUnassign = currentAssignedIds.filter(id => !selectedUserIds.includes(id));
+
+    setAssignModalOpen(false);
+
+    try {
+      if (usersToAssign.length > 0) {
+        await task_list_api.assignUsersToTaskList(currentTaskListToAssign.id, usersToAssign);
       }
+
+      if (usersToUnassign.length > 0) {
+        await task_list_api.removeUsersFromTaskList(currentTaskListToAssign.id, usersToUnassign);
+      }
+
+      alert("User assignments updated successfully!");
+      await fetchWGAndTaskLists();
+    } catch (err) {
+      console.error("Failed to update user assignments:", err);
+      alert("Failed to update user assignments. Please try again.");
     }
+    setCurrentTaskListToAssign(null);
   };
 
   const handleMenuToggle = (tasklistId) => {
@@ -175,7 +188,7 @@ const TaskListPage = () => {
     if (el) {
       const rect = el.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      const menuHeightEstimate = 150; // adjust based on expected menu height
+      const menuHeightEstimate = 150;
 
       if (rect.bottom + menuHeightEstimate > viewportHeight) {
         setMenuDirection((prev) => ({ ...prev, [tasklistId]: "up" }));
@@ -314,18 +327,11 @@ const TaskListPage = () => {
                               {taskList.is_checked ? "Uncheck" : "Check"}
                             </button>
                             <button
-                              onClick={() => handleAssignUsers(taskList.id, taskList.users)}
+                              onClick={() => openAssignModal(taskList)}
                               className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900"
                             >
                               <FaUserPlus className="mr-2" />
-                              Assign Users
-                            </button>
-                            <button
-                              onClick={() => handleUnassignUsers(taskList.id, taskList.users)}
-                              className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900"
-                            >
-                              <FaUserPlus className="mr-2 rotate-180" />
-                              Unassign Users
+                              Assign/Unassign Users
                             </button>
                             <button
                               onClick={() => handleDeleteTaskList(taskList.id)}
@@ -345,6 +351,103 @@ const TaskListPage = () => {
           </ul>
         )}
       </div>
+
+      {/* ASSIGNMENT MODAL */}
+      {assignModalOpen && currentTaskListToAssign && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Assign Users to "{currentTaskListToAssign.title}"
+            </h2>
+            <ul className="space-y-2 max-h-64 overflow-y-auto">
+              {wg.users.map((wgUser) => {
+                const isSelected = selectedUserIds.includes(wgUser.id);
+                return (
+                  <li
+                    key={wgUser.id}
+                    onClick={() => handleToggleUserSelection(wgUser.id)}
+                    className={`p-3 rounded-lg cursor-pointer transition-colors flex items-center justify-between ${
+                      isSelected
+                        ? "bg-blue-500 dark:bg-blue-700 text-white font-medium"
+                        : "bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-900 dark:text-white"
+                    }`}
+                  >
+                    <span>{wgUser.name}</span>
+                    {isSelected && (
+                      <FaTimes className="text-red-300 hover:text-red-500 ml-2" />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
+                onClick={() => setAssignModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveAssignments}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE NEW TASK LIST MODAL */}
+      {createModalOpen && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Create New Task List
+            </h2>
+            <div className="space-y-4">
+              <label className="block text-sm font-medium mb-1">Title</label>
+              <input
+                type="text"
+                placeholder="Title"
+                value={newTaskListTitle}
+                onChange={(e) => setNewTaskListTitle(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              <label className="block text-sm font-medium mb-1">Description</label>
+              <textarea
+                placeholder="Description"
+                value={newTaskListDescription}
+                onChange={(e) => setNewTaskListDescription(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="3"
+              />
+              <label className="block text-sm font-medium mb-1">Start Date</label>              
+              <input
+                type="date"
+                placeholder="Date"
+                value={newTaskListDate}
+                onChange={(e) => setNewTaskListDate(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
+            <div className="mt-6 flex justify-end space-x-2">
+              <button
+                onClick={() => setCreateModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveNewTaskList}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

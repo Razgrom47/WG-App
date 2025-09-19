@@ -11,6 +11,7 @@ import {
   FaUserPlus,
   FaTrash,
   FaPlus,
+  FaTimes,
 } from "react-icons/fa";
 import { MdOutlineCheckBoxOutlineBlank, MdOutlineCheckBox } from "react-icons/md";
 
@@ -26,20 +27,30 @@ const TaskListDetailPage = () => {
   const [menuDirection, setMenuDirection] = useState({});
   const menuRefs = useRef({});
 
+  // State for Create Task Modal
+  const [createTaskModalOpen, setCreateTaskModalOpen] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [newTaskStartDate, setNewTaskStartDate] = useState("");
+  const [newTaskEndDate, setNewTaskEndDate] = useState("");
+
+  // State for Assign/Unassign Users Modal
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [currentTaskToAssign, setCurrentTaskToAssign] = useState(null);
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+
   const fetchTaskListAndWG = async () => {
     try {
       setLoading(true);
       const taskListRes = await task_list_api.getTaskList(id);
       const fetchedTaskList = taskListRes.data;
       setTaskList(fetchedTaskList);
-
       const wgRes = await wg_api.getWG(fetchedTaskList.wg_id);
       setWg(wgRes.data);
-
       setError(null);
     } catch (err) {
-      console.error("Failed to load task list or WG data:", err);
-      setError("Failed to load data.");
+      console.error(err);
+      setError("Failed to load task list data.");
     } finally {
       setLoading(false);
     }
@@ -49,22 +60,6 @@ const TaskListDetailPage = () => {
     fetchTaskListAndWG();
   }, [id]);
 
-  useEffect(() => {
-    const handleOutsideClick = (event) => {
-      if (
-        openMenuId &&
-        menuRefs.current[openMenuId] &&
-        !menuRefs.current[openMenuId].contains(event.target)
-      ) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-    };
-  }, [openMenuId]);
-
   const isCurrentUserAdmin = () => {
     if (!wg || !user) return false;
     return (
@@ -73,61 +68,25 @@ const TaskListDetailPage = () => {
     );
   };
 
-  const isUserAssignedToTask = (task) => {
+  const isUserOfTask = (task) => {
     if (!task || !user) return false;
     return task.users.some((u) => u.id === user.id);
   };
 
-  const handleCreateTask = async () => {
-    const title = prompt("Enter the title for the new task:");
-    if (!title) return;
-
-    const description = prompt("Enter the description for the new task:") || "";
-    const start_date = prompt("Enter start date (YYYY-MM-DD):") || null;
-    const end_date = prompt("Enter end date (YYYY-MM-DD):") || null;
-
+  const handleToggleCheckTask = async (taskId, is_done) => {
     try {
-      await task_list_api.createTask(id, { title, description, start_date, end_date });
+      await task_api.checkTask(taskId);
       await fetchTaskListAndWG();
       setOpenMenuId(null);
     } catch (err) {
-      console.error("Failed to create task:", err);
-      alert("Failed to create task. Please try again.");
-    }
-  };
-
-  const handleUpdateTask = async (
-    taskId,
-    currentTitle,
-    currentDescription,
-    currentStart,
-    currentEnd
-  ) => {
-    const title = prompt("Enter the new title:", currentTitle);
-    if (!title) return;
-
-    const description =
-      prompt("Enter the new description:", currentDescription) || "";
-    const start_date =
-      prompt("Enter new start date (YYYY-MM-DD):", currentStart || "") || null;
-    const end_date =
-      prompt("Enter new end date (YYYY-MM-DD):", currentEnd || "") || null;
-
-    try {
-      await task_api.updateTask(taskId, { title, description, start_date, end_date });
-      await fetchTaskListAndWG();
-      setOpenMenuId(null);
-    } catch (err) {
-      console.error("Failed to update task:", err);
-      alert("Failed to update task. Please try again.");
+      console.error("Failed to toggle task check status:", err);
+      alert("Failed to toggle task check status. Please try again.");
     }
   };
 
   const handleDeleteTask = async (taskId) => {
     if (
-      window.confirm(
-        "Are you sure you want to delete this task? This action cannot be undone."
-      )
+      window.confirm("Are you sure you want to delete this task?")
     ) {
       try {
         await task_api.deleteTask(taskId);
@@ -140,38 +99,71 @@ const TaskListDetailPage = () => {
     }
   };
 
-  const handleToggleCheckTask = async (task) => {
+  const handleCreateTask = () => {
+    setCreateTaskModalOpen(true);
+  };
+
+  const handleSaveNewTask = async () => {
+    if (!newTaskTitle) {
+      alert("Please enter a title for the new task.");
+      return;
+    }
+    const taskData = {
+      title: newTaskTitle,
+      description: newTaskDescription,
+      start_date: newTaskStartDate || null,
+      end_date: newTaskEndDate || null,
+    };
     try {
-      await task_api.checkTask(task.id);
+      await task_list_api.createTask(taskList.id, taskData);
       await fetchTaskListAndWG();
-      setOpenMenuId(null);
+      setCreateTaskModalOpen(false);
+      setNewTaskTitle("");
+      setNewTaskDescription("");
+      setNewTaskStartDate("");
+      setNewTaskEndDate("");
     } catch (err) {
-      console.error("Failed to toggle task check status:", err);
-      alert("Failed to toggle task check status. Please try again.");
+      console.error("Failed to create task:", err);
+      alert("Failed to create task. Please try again.");
     }
   };
 
-  const handleAssignUsersToTask = async (taskId, currentUsers) => {
-    // Pre-fill with existing user IDs
-    const currentIds = currentUsers.map((u) => u.id).join(", ");
-    const userIdsInput = prompt("Edit user IDs (comma-separated):", currentIds);
+  const openAssignModal = (task) => {
+    setCurrentTaskToAssign(task);
+    setSelectedUserIds(task.users.map(u => u.id));
+    setAssignModalOpen(true);
+    setOpenMenuId(null);
+  };
 
-    if (userIdsInput !== null) {
-      const userIds = userIdsInput
-        .split(",")
-        .map((id) => parseInt(id.trim()))
-        .filter((id) => !isNaN(id));
+  const handleToggleUserSelection = (userId) => {
+    setSelectedUserIds(prevSelectedUserIds =>
+      prevSelectedUserIds.includes(userId)
+        ? prevSelectedUserIds.filter(id => id !== userId)
+        : [...prevSelectedUserIds, userId]
+    );
+  };
 
-      try {
-        await task_api.updateTask(taskId, { user_ids: userIds });
-        alert("Users updated successfully!");
-        await fetchTaskListAndWG();
-        setOpenMenuId(null);
-      } catch (err) {
-        console.error("Failed to update users:", err);
-        alert("Failed to update users. Please try again.");
+  const handleSaveTaskAssignments = async () => {
+    const currentAssignedIds = currentTaskToAssign.users.map(u => u.id);
+    const usersToAssign = selectedUserIds.filter(id => !currentAssignedIds.includes(id));
+    const usersToUnassign = currentAssignedIds.filter(id => !selectedUserIds.includes(id));
+
+    setAssignModalOpen(false);
+    
+    try {
+      if (usersToAssign.length > 0) {
+        await task_api.assignUsersToTask(currentTaskToAssign.id, usersToAssign);
       }
+      if (usersToUnassign.length > 0) {
+        await task_api.removeUsersFromTask(currentTaskToAssign.id, usersToUnassign);
+      }
+      alert("User assignments updated successfully!");
+      await fetchTaskListAndWG();
+    } catch (err) {
+      console.error("Failed to update user assignments:", err);
+      alert("Failed to update user assignments. Please try again.");
     }
+    setCurrentTaskToAssign(null);
   };
 
   const handleMenuToggle = (taskId) => {
@@ -206,21 +198,28 @@ const TaskListDetailPage = () => {
     );
   }
 
+  const sortedTasks = [...taskList.tasks].sort((a, b) => {
+    if (a.is_done === b.is_done) {
+      return 0;
+    }
+    return a.is_done ? 1 : -1;
+  });
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-6">
       <header className="flex items-center justify-between mb-6">
         <button onClick={() => navigate(-1)} className="text-xl">
           <FaArrowLeft />
         </button>
-        <h1 className="text-2xl font-bold">{taskList.title}</h1>
-        {isCurrentUserAdmin() && (
-          <button
-            onClick={handleCreateTask}
-            className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-          >
-            <FaPlus className="mr-2" /> New
-          </button>
-        )}
+        <h1 className="text-2xl font-bold">
+          {taskList.title}
+        </h1>
+        <button
+          onClick={handleCreateTask}
+          className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+        >
+          <FaPlus className="mr-2" /> New Task
+        </button>
       </header>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
@@ -248,39 +247,56 @@ const TaskListDetailPage = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
         {taskList.tasks.length === 0 ? (
           <p className="text-center text-gray-500 dark:text-gray-400">
-            No tasks found in this list.
+            No tasks found.
           </p>
         ) : (
           <ul className="space-y-4">
-            {taskList.tasks.map((task) => {
-              const userIsAssigned = isUserAssignedToTask(task);
-              const userIsAdmin = isCurrentUserAdmin();
-              let cardColorClass;
-
-              if (task.is_done) {
-                // Green if the task is done
-                cardColorClass = "bg-green-100 dark:bg-green-800";
-              } else if (userIsAssigned) {
-                // Blue if the user is assigned to an undone task
-                cardColorClass = "bg-blue-100 dark:bg-blue-800";
-              } else {
-                // Default gray for all other cases
-                cardColorClass = "bg-gray-200 dark:bg-gray-600";
-              }
-
-              const cardClass = `p-4 rounded-lg transition-colors ${cardColorClass} ${
-                !userIsAssigned && !userIsAdmin ? "cursor-not-allowed" : ""
+            {sortedTasks.map((task) => {
+              const userIsAssigned = isUserOfTask(task);
+              const linkClass = `block p-4 rounded-lg transition-colors ${
+                userIsAssigned || isCurrentUserAdmin()
+                  ? task.is_done
+                    ? "bg-green-100 hover:bg-green-200 dark:bg-green-800 dark:hover:bg-green-700"
+                    : "bg-gray-50 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
+                  : "bg-gray-200 dark:bg-gray-600 cursor-not-allowed"
               }`;
-
+              const textClass = `${
+                userIsAssigned || isCurrentUserAdmin()
+                  ? "text-gray-900 dark:text-white"
+                  : "text-gray-500 dark:text-gray-400"
+              }`;
+              const userNames = task.users.map((u) => u.name).join(", ");
               return (
                 <li key={task.id} className="relative">
-                  <div className={`${cardClass} flex flex-col`}>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-lg font-semibold">{task.title}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
-                          {task.description || "No description"}
-                        </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className={linkClass}>
+                        <div className="flex items-center">
+                          <span
+                            className={`${textClass} truncate font-medium flex-1`}
+                          >
+                            {task.title}
+                          </span>
+                          {userIsAssigned && (
+                            <button
+                              onClick={() => handleToggleCheckTask(task.id, task.is_done)}
+                              className="ml-4 text-2xl"
+                            >
+                              {task.is_done ? (
+                                <MdOutlineCheckBox className="text-green-500" />
+                              ) : (
+                                <MdOutlineCheckBoxOutlineBlank className="text-gray-400" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                        {task.description && (
+                          <p
+                            className={`${textClass} text-sm mt-1 truncate`}
+                          >
+                            {task.description || "No description"}
+                          </p>
+                        )}
                         <p className="text-xs text-gray-500 mt-1">
                           Start:{" "}
                           {task.start_date
@@ -292,85 +308,53 @@ const TaskListDetailPage = () => {
                             ? new Date(task.end_date).toLocaleDateString()
                             : "N/A"}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Assigned:{" "}
-                          {task.users.map((u) => u.name).join(", ") || "None"}
-                        </p>
-                      </div>
-                      {(userIsAdmin || userIsAssigned) && (
-                        <div
-                          className="relative ml-2"
-                          ref={(el) => (menuRefs.current[task.id] = el)}
-                        >
-                          <button
-                            onClick={() => handleMenuToggle(task.id)}
-                            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        {userNames && (
+                          <p
+                            className={`${textClass} text-xs mt-1 text-gray-400`}
                           >
-                            <FaEllipsisV />
-                          </button>
-                          {openMenuId === task.id && (
-                            <div
-                              className={`absolute right-0 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg z-10
-                                ${
-                                  menuDirection[task.id] === "up"
-                                    ? "bottom-full mb-2"
-                                    : "top-full mt-2"
-                                }`}
-                            >
-                              {/* Check/Uncheck - Available to both admins and assigned users */}
-                              <button
-                                onClick={() => handleToggleCheckTask(task)}
-                                className="w-full text-left flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900"
-                              >
-                                {task.is_done ? (
-                                  <MdOutlineCheckBox className="mr-2" />
-                                ) : (
-                                  <MdOutlineCheckBoxOutlineBlank className="mr-2" />
-                                )}
-                                {task.is_done ? "Uncheck" : "Check"}
-                              </button>
-
-                              {/* Admin-only options */}
-                              {userIsAdmin && (
-                                <>
-                                  <button
-                                    onClick={() =>
-                                      handleUpdateTask(
-                                        task.id,
-                                        task.title,
-                                        task.description,
-                                        task.start_date,
-                                        task.end_date
-                                      )
-                                    }
-                                    className="w-full text-left flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900"
-                                  >
-                                    <FaEdit className="mr-2" />
-                                    Update
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      handleAssignUsersToTask(task.id, task.users)
-                                    }
-                                    className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900"
-                                  >
-                                    <FaUserPlus className="mr-2" />
-                                    Assign Users
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteTask(task.id)}
-                                    className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
-                                  >
-                                    <FaTrash className="mr-2" />
-                                    Delete
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                            Assigned to: {userNames}
+                          </p>
+                        )}
+                      </div>
                     </div>
+                    {(isCurrentUserAdmin() || userIsAssigned) && (
+                      <div
+                        className="relative ml-2"
+                        ref={(el) => (menuRefs.current[task.id] = el)}
+                      >
+                        <button
+                          onClick={() => handleMenuToggle(task.id)}
+                          className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <FaEllipsisV />
+                        </button>
+                        {openMenuId === task.id && (
+                          <div
+                            className={`absolute right-0 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg z-10
+                              ${
+                                menuDirection[task.id] === "up"
+                                  ? "bottom-full mb-2"
+                                  : "top-full mt-2"
+                              }`}
+                          >
+                            <button
+                              onClick={() => openAssignModal(task)}
+                              className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900"
+                            >
+                              <FaUserPlus className="mr-2" />
+                              Assign/Unassign Users
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+                            >
+                              <FaTrash className="mr-2" />
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </li>
               );
@@ -378,6 +362,111 @@ const TaskListDetailPage = () => {
           </ul>
         )}
       </div>
+
+      {/* CREATE NEW TASK MODAL */}
+      {createTaskModalOpen && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Create New Task
+            </h2>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Title"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              <textarea
+                placeholder="Description"
+                value={newTaskDescription}
+                onChange={(e) => setNewTaskDescription(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="3"
+              />
+              <div>
+                <label className="block text-sm font-medium mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={newTaskStartDate}
+                  onChange={(e) => setNewTaskStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={newTaskEndDate}
+                  onChange={(e) => setNewTaskEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end space-x-2">
+              <button
+                onClick={() => setCreateTaskModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveNewTask}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                Create Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ASSIGNMENT MODAL */}
+      {assignModalOpen && currentTaskToAssign && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Assign Users to "{currentTaskToAssign.title}"
+            </h2>
+            <ul className="space-y-2 max-h-64 overflow-y-auto">
+              {wg.users.map((wgUser) => {
+                const isSelected = selectedUserIds.includes(wgUser.id);
+                return (
+                  <li
+                    key={wgUser.id}
+                    onClick={() => handleToggleUserSelection(wgUser.id)}
+                    className={`p-3 rounded-lg cursor-pointer transition-colors flex items-center justify-between ${
+                      isSelected
+                        ? "bg-blue-500 dark:bg-blue-700 text-white font-medium"
+                        : "bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-900 dark:text-white"
+                    }`}
+                  >
+                    <span>{wgUser.name}</span>
+                    {isSelected && (
+                      <FaTimes className="text-red-300 hover:text-red-500 ml-2" />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
+                onClick={() => setAssignModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveTaskAssignments}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

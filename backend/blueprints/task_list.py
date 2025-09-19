@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask import Blueprint, request, jsonify, g
 from extensions import db
-from models import TaskList, Task, User, WG
+from models import TaskList, Task, User, WG, user_tasklist
 from decorators import token_required
 
 task_list_bp = Blueprint('task_list_bp', __name__)
@@ -72,6 +72,7 @@ def get_task_list(tasklist_id):
     return jsonify(serialize_tasklist(task_list)), 200
 
 
+
 @task_list_bp.route('/tasklist', methods=['POST'])
 @token_required
 def create_task_list():
@@ -95,6 +96,9 @@ def create_task_list():
                 type: string
               description:
                 type: string
+              date:
+                type: string
+                format: date
     responses:
       201:
         description: Task list created
@@ -111,9 +115,15 @@ def create_task_list():
     wg_id = data['wg_id']
     if not is_user_of_wg(g.current_user, wg_id):
         return jsonify({'message': 'Not authorized'}), 403
+
+    # Handle the optional date field
+    task_date_str = data.get('date')
+    task_date = datetime.fromisoformat(task_date_str) if task_date_str else None
+
     new_task_list = TaskList(
         title=data['title'],
         description=data.get('description'),
+        date=task_date,
         wg_id=wg_id
     )
     # Assign the creator to the task list
@@ -351,6 +361,7 @@ def assign_users_to_tasklist(tasklist_id):
     db.session.commit()
     return jsonify({'message': 'Users assigned to task list successfully'}), 200
 
+
 @task_list_bp.route('/tasklist/<int:tasklist_id>/remove_users', methods=['POST'])
 @token_required
 def remove_users_from_tasklist(tasklist_id):
@@ -392,12 +403,21 @@ def remove_users_from_tasklist(tasklist_id):
     if not is_admin_of_wg(g.current_user, task_list.wg_id):
         return jsonify({'message': 'Not authorized'}), 403
     data = request.get_json()
-    users = User.query.filter(User.idUser.in_(data['user_ids'])).all()
-    for user in users:
-        if user in task_list.users:
-            task_list.users.remove(user)
+    user_ids_to_remove = data.get('user_ids', [])
+
+    if not user_ids_to_remove:
+        return jsonify({'message': 'No user IDs provided'}), 400
+
+    # Explicitly delete from the association table
+    db.session.query(user_tasklist).filter(
+        user_tasklist.c.tasklist_id == tasklist_id,
+        user_tasklist.c.user_id.in_(user_ids_to_remove)
+    ).delete(synchronize_session=False)
+
     db.session.commit()
+    
     return jsonify({'message': 'Users unassigned from task list successfully'}), 200
+
 
 @task_list_bp.route('/tasklist/<int:tasklist_id>/check_tasklist', methods=['POST'])
 @token_required

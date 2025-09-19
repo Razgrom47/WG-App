@@ -20,6 +20,7 @@ const WGManagement = ({ onCreated }) => {
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg shadow">
       <form onSubmit={handleSubmit} className="space-y-4">
+        <label className="block text-sm font-medium mb-1">Title</label>              
         <input
           name="title"
           placeholder="Title"
@@ -28,6 +29,7 @@ const WGManagement = ({ onCreated }) => {
           required
           className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
+        <label className="block text-sm font-medium mb-1">Address</label>              
         <input
           name="address"
           placeholder="Address"
@@ -36,6 +38,7 @@ const WGManagement = ({ onCreated }) => {
           required
           className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
+        <label className="block text-sm font-medium mb-1">Etage</label>              
         <input
           name="etage"
           placeholder="Etage (e.g., 2nd floor)"
@@ -43,6 +46,7 @@ const WGManagement = ({ onCreated }) => {
           onChange={handleChange}
           className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
+        <label className="block text-sm font-medium mb-1">Description</label>              
         <textarea
           name="description"
           placeholder="Description"
