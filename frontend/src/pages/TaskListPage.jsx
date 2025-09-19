@@ -28,10 +28,18 @@ const TaskListPage = () => {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [currentTaskListToAssign, setCurrentTaskListToAssign] = useState(null);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
+
+  // State for Create Task List Modal
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newTaskListTitle, setNewTaskListTitle] = useState("");
   const [newTaskListDescription, setNewTaskListDescription] = useState("");
   const [newTaskListDate, setNewTaskListDate] = useState("");
+
+  // State for Edit Task List Modal
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [currentEditTaskList, setCurrentEditTaskList] = useState(null);
+  const [editedTitle, setEditedTitle] = useState("");
+  const [editedDescription, setEditedDescription] = useState("");
 
   const fetchWGAndTaskLists = async () => {
     try {
@@ -96,18 +104,33 @@ const TaskListPage = () => {
     }
   };
 
-  const handleUpdateTaskList = async (tasklistId, currentTitle, currentDescription) => {
-    const title = prompt("Enter the new title:", currentTitle);
-    if (title) {
-      const description = prompt("Enter the new description:", currentDescription);
-      try {
-        await task_list_api.updateTaskList(tasklistId, { title, description });
-        await fetchWGAndTaskLists();
-        setOpenMenuId(null);
-      } catch (err) {
-        console.error("Failed to update task list:", err);
-        alert("Failed to update task list. Please try again.");
-      }
+  const handleUpdateTaskList = (taskList) => {
+    setCurrentEditTaskList(taskList);
+    setEditedTitle(taskList.title);
+    setEditedDescription(taskList.description);
+    setEditModalOpen(true);
+    setOpenMenuId(null);
+  };
+
+  const handleSaveEditTaskList = async () => {
+    if (!editedTitle) {
+      alert("Please enter a title for the task list.");
+      return;
+    }
+    const updatedData = {
+      title: editedTitle,
+      description: editedDescription,
+    };
+    try {
+      await task_list_api.updateTaskList(currentEditTaskList.id, updatedData);
+      await fetchWGAndTaskLists();
+      setEditModalOpen(false);
+      setCurrentEditTaskList(null);
+      setEditedTitle("");
+      setEditedDescription("");
+    } catch (err) {
+      console.error("Failed to update task list:", err);
+      alert("Failed to update task list. Please try again.");
     }
   };
 
@@ -277,15 +300,29 @@ const TaskListPage = () => {
                 <li key={taskList.id} className="relative">
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
-                      <Link to={titleLink} className={linkClass}>
+                      <div className={linkClass}>
                         <div className="flex items-center">
-                          <span
-                            className={`${textClass} truncate font-medium flex-1`}
-                          >
-                            {taskList.title}
-                          </span>
+                          <Link to={titleLink} className="flex-1">
+                            <span
+                              className={`${textClass} truncate font-medium flex-1`}
+                            >
+                              {taskList.title}
+                            </span>
+                          </Link>
+                          {isCurrentUserAdmin() && (
+                            <button
+                              onClick={() => handleToggleCheckTaskList(taskList)}
+                              className="ml-4 text-2xl"
+                            >
+                              {taskList.is_checked ? (
+                                <MdOutlineCheckBox className="text-green-500" />
+                              ) : (
+                                <MdOutlineCheckBoxOutlineBlank className="text-gray-400" />
+                              )}
+                            </button>
+                          )}
                         </div>
-                      </Link>
+                      </div>
                     </div>
 
                     {isCurrentUserAdmin() && (
@@ -309,22 +346,11 @@ const TaskListPage = () => {
                               }`}
                           >
                             <button
-                              onClick={() => handleUpdateTaskList(taskList.id, taskList.title, taskList.description)}
+                              onClick={() => handleUpdateTaskList(taskList)}
                               className="w-full text-left flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900"
                             >
                               <FaEdit className="mr-2" />
                               Update
-                            </button>
-                            <button
-                              onClick={() => handleToggleCheckTaskList(taskList)}
-                              className="w-full text-left flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900"
-                            >
-                              {taskList.is_checked ? (
-                                <MdOutlineCheckBox className="mr-2" />
-                              ) : (
-                                <MdOutlineCheckBoxOutlineBlank className="mr-2" />
-                              )}
-                              {taskList.is_checked ? "Uncheck" : "Check"}
                             </button>
                             <button
                               onClick={() => openAssignModal(taskList)}
@@ -443,6 +469,47 @@ const TaskListPage = () => {
                 className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
               >
                 Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT TASK LIST MODAL */}
+      {editModalOpen && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Edit Task List</h2>
+            <div className="space-y-4">
+              <label className="block text-sm font-medium mb-1">Title</label>
+              <input
+                type="text"
+                placeholder="Title"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              <label className="block text-sm font-medium mb-1">Description</label>
+              <textarea
+                placeholder="Description"
+                value={editedDescription}
+                onChange={(e) => setEditedDescription(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="3"
+              />
+            </div>
+            <div className="mt-6 flex justify-end space-x-2">
+              <button
+                onClick={() => setEditModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEditTaskList}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Save Changes
               </button>
             </div>
           </div>

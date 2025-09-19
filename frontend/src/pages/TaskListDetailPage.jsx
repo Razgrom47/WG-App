@@ -34,6 +34,14 @@ const TaskListDetailPage = () => {
   const [newTaskStartDate, setNewTaskStartDate] = useState("");
   const [newTaskEndDate, setNewTaskEndDate] = useState("");
 
+  // State for Edit Task Modal
+  const [editTaskModalOpen, setEditTaskModalOpen] = useState(false);
+  const [currentEditTask, setCurrentEditTask] = useState(null);
+  const [editedTaskTitle, setEditedTaskTitle] = useState("");
+  const [editedTaskDescription, setEditedTaskDescription] = useState("");
+  const [editedTaskStartDate, setEditedTaskStartDate] = useState("");
+  const [editedTaskEndDate, setEditedTaskEndDate] = useState("");
+
   // State for Assign/Unassign Users Modal
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [currentTaskToAssign, setCurrentTaskToAssign] = useState(null);
@@ -125,6 +133,43 @@ const TaskListDetailPage = () => {
     } catch (err) {
       console.error("Failed to create task:", err);
       alert("Failed to create task. Please try again.");
+    }
+  };
+
+  const handleUpdateTask = (task) => {
+    setCurrentEditTask(task);
+    setEditedTaskTitle(task.title);
+    setEditedTaskDescription(task.description);
+    // Convert date strings to "YYYY-MM-DD" format for input type="date"
+    setEditedTaskStartDate(task.start_date ? new Date(task.start_date).toISOString().split('T')[0] : "");
+    setEditedTaskEndDate(task.end_date ? new Date(task.end_date).toISOString().split('T')[0] : "");
+    setEditTaskModalOpen(true);
+    setOpenMenuId(null);
+  };
+
+  const handleSaveEditTask = async () => {
+    if (!editedTaskTitle) {
+      alert("Please enter a title for the task.");
+      return;
+    }
+    const updatedData = {
+      title: editedTaskTitle,
+      description: editedTaskDescription,
+      start_date: editedTaskStartDate || null,
+      end_date: editedTaskEndDate || null,
+    };
+    try {
+      await task_api.updateTask(currentEditTask.id, updatedData);
+      await fetchTaskListAndWG();
+      setEditTaskModalOpen(false);
+      setCurrentEditTask(null);
+      setEditedTaskTitle("");
+      setEditedTaskDescription("");
+      setEditedTaskStartDate("");
+      setEditedTaskEndDate("");
+    } catch (err) {
+      console.error("Failed to update task:", err);
+      alert("Failed to update task. Please try again.");
     }
   };
 
@@ -338,6 +383,13 @@ const TaskListDetailPage = () => {
                               }`}
                           >
                             <button
+                                onClick={() => handleUpdateTask(task)}
+                                className="w-full text-left flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900"
+                            >
+                                <FaEdit className="mr-2" />
+                                Edit
+                            </button>
+                            <button
                               onClick={() => openAssignModal(task)}
                               className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900"
                             >
@@ -416,6 +468,65 @@ const TaskListDetailPage = () => {
                 className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
               >
                 Create Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT TASK MODAL */}
+      {editTaskModalOpen && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Edit Task
+            </h2>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Title"
+                value={editedTaskTitle}
+                onChange={(e) => setEditedTaskTitle(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              <textarea
+                placeholder="Description"
+                value={editedTaskDescription}
+                onChange={(e) => setEditedTaskDescription(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="3"
+              />
+              <div>
+                <label className="block text-sm font-medium mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={editedTaskStartDate}
+                  onChange={(e) => setEditedTaskStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={editedTaskEndDate}
+                  onChange={(e) => setEditedTaskEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end space-x-2">
+              <button
+                onClick={() => setEditTaskModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEditTask}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Save Changes
               </button>
             </div>
           </div>

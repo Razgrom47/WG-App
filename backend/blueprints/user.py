@@ -245,6 +245,8 @@ def leave_wg(wg_id):
         wg = WG.query.get(wg_id)
         if wg and user in wg.users:
             wg.users.remove(user)
+            if user in wg.admins:
+              wg.admins.remove(user)
             db.session.commit()
             return jsonify({'message': 'User left WG successfully'}), 200
         return jsonify({'message': 'User not in WG or WG not found'}), 404

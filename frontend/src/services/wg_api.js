@@ -16,8 +16,7 @@ const wg_api = {
   // Delete a WG
   deleteWG: (id) => api.delete(`/wg/${id}`),
 
-  // Invite a user to a WG
-  inviteUser: (wgId, userId) => api.post(`/wg/${wgId}/invite`, { user_id: userId  }),
+  inviteUserByUsername: (wgId, username) => api.post(`/wg/${wgId}/invite_by_username`, { username: username }),
 
   // Kick a user from a WG
   kickUser: (wgId, userId) => api.post(`/wg/${wgId}/kick`, { user_id: userId }),
@@ -32,14 +31,15 @@ const wg_api = {
   getTaskLists: (wgId) => api.get(`/wg/${wgId}/tasklists`),
 
   // Get all budget plans for a WG
-  getBudgetPlans: (wgId) => api.get(`/wg/${wgId}/budget`),
+  getBudgetPlans: (wgId) => api.get(`/wg/${wgId}/budgetplans`),
 
   // Get all shopping lists for a WG
-  getShoppingLists: (wgId) => api.get(`/wg/${wgId}/shopping`),
+  getShoppingLists: (wgId) => api.get(`/wg/${wgId}/shoppinglists`),
 
   // Admin-specific actions
   toggleAdmin: (wgId, userId) => api.post(`/wg/${wgId}/admin`, { user_id: userId }),
-  transferCreator: (wgId, newCreatorId) => api.post(`/wg/${wgId}/transfer_creator`, { user_id: newCreatorId }),
+  
+  transferCreator: (wgId, username) => api.post(`/wg/${wgId}/transfer_creator`, { username: username }),
 };
 
 export default wg_api;

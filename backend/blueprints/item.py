@@ -147,3 +147,41 @@ def delete_item(item_id):
     db.session.delete(item)
     db.session.commit()
     return jsonify({'message': 'Item deleted successfully'}), 204
+
+@item_bp.route('/item/<int:item_id>/check', methods=['PUT'])
+@token_required
+def check_item(item_id):
+    """
+    Check/uncheck an item
+    ---
+    tags:
+      - Item
+    security:
+      - Bearer: []
+    parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: Item checked/unchecked
+      403:
+        description: Not authorized
+      404:
+        description: Item not found
+    """
+    item = Item.query.get_or_404(item_id)
+    shopping_list = ShoppingList.query.get(item.shoppinglist_id)
+    if not shopping_list or not is_user_of_wg(g.current_user, shopping_list.wg_id):
+        return jsonify({'message': 'Not authorized'}), 403
+    
+    item.is_checked = not item.is_checked
+    
+    # Check if all items in the list are now checked
+    all_items_checked = all(i.is_checked for i in shopping_list.items)
+    shopping_list.is_checked = all_items_checked
+    
+    db.session.commit()
+    return jsonify(serialize_item(item)), 200

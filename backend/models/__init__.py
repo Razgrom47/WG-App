@@ -146,6 +146,7 @@ class ShoppingList(db.Model):
     title = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.utcnow)
+    is_checked = db.Column(db.Boolean, default=False)
     creator_id = db.Column(db.Integer, db.ForeignKey('USERS.idUser'))
     creator = db.relationship('User', foreign_keys=[creator_id])
     wg_id = db.Column(db.Integer, db.ForeignKey('WG.idWG'))

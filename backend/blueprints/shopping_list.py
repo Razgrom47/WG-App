@@ -11,7 +11,7 @@ def is_user_of_wg(user, wg_id):
 
 def is_admin_of_wg(user, wg_id):
     wg = WG.query.get(wg_id)
-    return wg and (user in wg.admins or g.current_user == wg.creator)
+    return wg and (user in wg.admins or g.current_user.idUser == wg.creator_id)
 
 def serialize_shoppinglist(shoppinglist):
     return {
@@ -19,9 +19,8 @@ def serialize_shoppinglist(shoppinglist):
         'title': shoppinglist.title,
         'description': shoppinglist.description,
         'date': shoppinglist.date,
-        'creator': {'id': shoppinglist.creator_id},
+        'creator': {'id': shoppinglist.creator_id, 'name': shoppinglist.creator.strUser if shoppinglist.creator else None},
         'wg_id': shoppinglist.wg_id,
-        'users': [{'id': u.idUser, 'name': u.strUser} for u in shoppinglist.users],
         'items': [
             {
                 'id': item.idItem,
@@ -79,6 +78,37 @@ def create_shopping_list():
     db.session.commit()
     return jsonify(serialize_shoppinglist(new_list)), 201
 
+@shopping_list_bp.route('/shoppinglist/<int:shoppinglist_id>', methods=['GET'])
+@token_required
+def get_shopping_list(shoppinglist_id):
+    """
+    Get a specific shopping list by ID
+    ---
+    tags:
+      - ShoppingList
+    security:
+      - Bearer: []
+    parameters:
+      - name: shoppinglist_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: Shopping list found
+      403:
+        description: Not authorized
+      404:
+        description: Shopping list not found
+    """
+    shopping_list = ShoppingList.query.get(shoppinglist_id)
+    if not shopping_list:
+        return jsonify({'message': 'Shopping list not found'}), 404
+    if not is_user_of_wg(g.current_user, shopping_list.wg_id):
+        return jsonify({'message': 'Not authorized'}), 403
+    return jsonify(serialize_shoppinglist(shopping_list)), 200
+
 @shopping_list_bp.route('/shoppinglist/<int:shoppinglist_id>', methods=['DELETE'])
 @token_required
 def delete_shopping_list(shoppinglist_id):
@@ -106,142 +136,13 @@ def delete_shopping_list(shoppinglist_id):
     shopping_list = ShoppingList.query.get(shoppinglist_id)
     if not shopping_list:
         return jsonify({'message': 'Shopping list not found'}), 404
-    if not (g.current_user.idUser == shopping_list.creator_id or is_admin_of_wg(g.current_user, shopping_list.wg_id)):
-        return jsonify({'message': 'Not authorized'}), 403
+    
+    if shopping_list.creator_id != g.current_user.idUser and not is_admin_of_wg(g.current_user, shopping_list.wg_id):
+        return jsonify({'message': 'Not authorized to delete this shopping list'}), 403
+        
     db.session.delete(shopping_list)
     db.session.commit()
     return jsonify({'message': 'Shopping list deleted successfully'}), 204
-
-@shopping_list_bp.route('/shoppinglist/<int:shoppinglist_id>/add_item', methods=['POST'])
-@token_required
-def add_item(shoppinglist_id):
-    """
-    Add an item to a shopping list
-    ---
-    tags:
-      - ShoppingList
-    security:
-      - Bearer: []
-    parameters:
-      - name: shoppinglist_id
-        in: path
-        required: true
-        schema:
-          type: integer
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              title:
-                type: string
-              description:
-                type: string
-    responses:
-      201:
-        description: Item created
-      403:
-        description: Not authorized
-    """
-    shopping_list = ShoppingList.query.get(shoppinglist_id)
-    if not shopping_list or not is_user_of_wg(g.current_user, shopping_list.wg_id):
-        return jsonify({'message': 'Not authorized'}), 403
-    data = request.get_json()
-    new_item = Item(
-        title=data['title'],
-        description=data.get('description'),
-        shoppinglist_id=shoppinglist_id
-    )
-    db.session.add(new_item)
-    db.session.commit()
-    return jsonify({'id': new_item.idItem, 'title': new_item.title}), 201
-
-@shopping_list_bp.route('/shoppinglist/<int:shoppinglist_id>/check_item', methods=['POST'])
-@token_required
-def check_item(shoppinglist_id):
-    """
-    Toggle check status of an item in a shopping list
-    ---
-    tags:
-      - ShoppingList
-    security:
-      - Bearer: []
-    parameters:
-      - name: shoppinglist_id
-        in: path
-        required: true
-        schema:
-          type: integer
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              item_id:
-                type: integer
-    responses:
-      200:
-        description: Item check status updated
-      404:
-        description: Item not found or not authorized
-    """
-    data = request.get_json()
-    item = Item.query.get(data['item_id'])
-    shopping_list = ShoppingList.query.get(shoppinglist_id)
-    if not item or item.shoppinglist_id != shoppinglist_id or not is_user_of_wg(g.current_user, shopping_list.wg_id):
-        return jsonify({'message': 'Item not found or not authorized'}), 404
-    item.is_checked = not item.is_checked
-    db.session.commit()
-    return jsonify({'id': item.idItem, 'is_checked': item.is_checked}), 200
-
-@shopping_list_bp.route('/shoppinglist/<int:shoppinglist_id>/update_item', methods=['PUT'])
-@token_required
-def update_item_in_list(shoppinglist_id):
-    """
-    Update an item in a shopping list
-    ---
-    tags:
-      - ShoppingList
-    security:
-      - Bearer: []
-    parameters:
-      - name: shoppinglist_id
-        in: path
-        required: true
-        schema:
-          type: integer
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              item_id:
-                type: integer
-              title:
-                type: string
-              description:
-                type: string
-    responses:
-      200:
-        description: Item updated
-      404:
-        description: Item not found or not authorized
-    """
-    data = request.get_json()
-    item = Item.query.get(data['item_id'])
-    shopping_list = ShoppingList.query.get(shoppinglist_id)
-    if not item or item.shoppinglist_id != shoppinglist_id or not is_user_of_wg(g.current_user, shopping_list.wg_id):
-        return jsonify({'message': 'Item not found or not authorized'}), 404
-    item.title = data.get('title', item.title)
-    item.description = data.get('description', item.description)
-    db.session.commit()
-    return jsonify({'id': item.idItem, 'title': item.title, 'description': item.description}), 200
 
 @shopping_list_bp.route('/shoppinglist/<int:shoppinglist_id>', methods=['PUT'])
 @token_required
@@ -284,3 +185,44 @@ def update_shopping_list(shoppinglist_id):
     shopping_list.description = data.get('description', shopping_list.description)
     db.session.commit()
     return jsonify(serialize_shoppinglist(shopping_list)), 200
+
+@shopping_list_bp.route('/shoppinglist/<int:shoppinglist_id>/check', methods=['PUT'])
+@token_required
+def check_shopping_list(shoppinglist_id):
+    """
+    Check/uncheck a shopping list
+    ---
+    tags:
+      - ShoppingList
+    security:
+      - Bearer: []
+    parameters:
+      - name: shoppinglist_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: Shopping list checked/unchecked
+      403:
+        description: Not authorized
+      404:
+        description: Shopping list not found
+    """
+    shopping_list = ShoppingList.query.get(shoppinglist_id)
+    if not shopping_list:
+        return jsonify({'message': 'Shopping list not found'}), 404
+    if not is_user_of_wg(g.current_user, shopping_list.wg_id):
+        return jsonify({'message': 'Not authorized'}), 403
+    
+    # Toggle the shopping list's checked status
+    shopping_list.is_checked = not shopping_list.is_checked
+    
+    # If the shopping list is now checked, check all items
+    if shopping_list.is_checked:
+        for item in shopping_list.items:
+            item.is_checked = True
+    
+    db.session.commit()
+    return jsonify({'message': 'Shopping list checked successfully'}), 200

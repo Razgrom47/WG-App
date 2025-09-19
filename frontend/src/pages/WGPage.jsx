@@ -14,6 +14,8 @@ import {
   FaUserSlash,
   FaEllipsisV,
   FaPlus,
+  FaTimes,
+  FaUserPlus,
 } from "react-icons/fa";
 
 const WGPage = () => {
@@ -26,6 +28,10 @@ const WGPage = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [menuDirection, setMenuDirection] = useState({});
   const menuRefs = useRef({});
+  
+  // State for Invite User Modal
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [usernameToInvite, setUsernameToInvite] = useState("");
 
   const fetchWG = async () => {
     try {
@@ -97,20 +103,23 @@ const WGPage = () => {
     }
   };
 
-  const handleInviteUser = async () => {
-    const userId = prompt("Enter the User ID to invite:");
-    if (userId) {
-      try {
-        await wg_api.inviteUser(id, userId);
-        alert("User invited successfully!");
-        fetchWG();
-      } catch (err) {
-        console.error("Failed to invite user:", err);
-        alert(
-          err.response?.data?.message ||
-            "Failed to invite user. Please try again."
-        );
-      }
+  const handleSendInvite = async () => {
+    if (!usernameToInvite) {
+      alert("Please enter a username.");
+      return;
+    }
+    try {
+      await wg_api.inviteUserByUsername(id, usernameToInvite);
+      alert("User invited successfully!");
+      setInviteModalOpen(false);
+      setUsernameToInvite("");
+      fetchWG();
+    } catch (err) {
+      console.error("Failed to invite user:", err);
+      alert(
+        err.response?.data?.message ||
+          "Failed to invite user. Please try again."
+      );
     }
   };
 
@@ -235,7 +244,7 @@ const WGPage = () => {
             <h3 className="text-xl font-semibold">Members:</h3>
             {isCurrentUserAdmin && (
               <button
-                onClick={handleInviteUser}
+                onClick={() => setInviteModalOpen(true)}
                 className="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
               >
                 <FaPlus className="mr-2" />
@@ -322,6 +331,48 @@ const WGPage = () => {
           </div>
         )}
       </div>
+
+      {/* Invite User Modal */}
+      {inviteModalOpen && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Invite User
+              </h2>
+              <button
+                onClick={() => setInviteModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Enter username"
+                value={usernameToInvite}
+                onChange={(e) => setUsernameToInvite(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
+            <div className="mt-6 flex justify-end space-x-2">
+              <button
+                onClick={() => setInviteModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendInvite}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                Send Invite
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

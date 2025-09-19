@@ -2,29 +2,29 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import wg_api from "../services/wg_api";
-import { FaArrowLeft, FaSave, FaUserPlus, FaTrash } from "react-icons/fa";
+import { FaArrowLeft, FaSave, FaUserPlus, FaTrash, FaTimes } from "react-icons/fa";
 
 const WGUpdate = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [wg, setWg] = useState(null);
-  // Initializing the form state with empty strings, but also include the `is_public`
-  // so the form's state is always defined. This is a common source of the 'uncontrolled to controlled' error.
   const [form, setForm] = useState({
     title: "",
     address: "",
     etage: "",
     description: "",
-    // Add is_public to the form state with a default value to prevent the uncontrolled input error.
     is_public: false, 
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
-  // The isPublic state is handled separately for the checkbox.
   const [isPublic, setIsPublic] = useState(false);
+  
+  // State for Transfer Creator Modal
+  const [transferCreatorModalOpen, setTransferCreatorModalOpen] = useState(false);
+  const [usernameToTransfer, setUsernameToTransfer] = useState("");
 
   const fetchWG = async () => {
     try {
@@ -38,7 +38,6 @@ const WGUpdate = () => {
         description: wgData.description,
       });
 
-      // The isPublic state is updated with the fetched data.
       setIsPublic(wgData.is_public);
 
       const userIsAdmin = wgData.admins.some((admin) => admin.id === user.id);
@@ -62,7 +61,6 @@ const WGUpdate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Send the combined form data and public status to the API.
       await wg_api.updateWG(id, { ...form, is_public: isPublic });
       alert("Shared apartment updated successfully!");
       navigate(`/wg/${id}`);
@@ -79,17 +77,32 @@ const WGUpdate = () => {
       setForm({ ...form, [name]: value });
     }
   };
-  
-   const handleTransferOwnership = async () => {
-    const newCreatorId = prompt("Enter the ID of the user you want to make the new Creator:");
-    if (newCreatorId) {
-      try {
-        await wg_api.transferCreator(id, newCreatorId);
-        alert("Creator transferred successfully!");
-        fetchWG();
-      } catch (err) {
-        alert("Error: " + (err.response?.data?.message || "Failed to transfer creator"));
-      }
+
+  const handleTransferOwnership = () => {
+    setTransferCreatorModalOpen(true);
+  };
+
+  const handleSendTransferRequest = async () => {
+    if (!usernameToTransfer) {
+      alert("Please enter a username.");
+      return;
+    }
+    if (usernameToTransfer === user.name) {
+      alert("You cannot transfer creator status to yourself.");
+      return;
+    }
+    try {
+      await wg_api.transferCreator(id, usernameToTransfer);
+      alert(`Creator status transferred to ${usernameToTransfer} successfully!`);
+      navigate(`/wg/${id}`);
+    } catch (err) {
+      alert(
+        err.response?.data?.message ||
+        `Failed to transfer creator status. Please try again.`
+      );
+    } finally {
+      setTransferCreatorModalOpen(false);
+      setUsernameToTransfer("");
     }
   };
 
@@ -142,6 +155,7 @@ const WGUpdate = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
           <div>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <label className="block text-sm font-medium mb-1">Title</label>
               <input
                 type="text"
                 name="title"
@@ -151,6 +165,7 @@ const WGUpdate = () => {
                 required
                 className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
+              <label className="block text-sm font-medium mb-1">Address</label>
               <input
                 type="text"
                 name="address"
@@ -160,6 +175,7 @@ const WGUpdate = () => {
                 required
                 className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
+              <label className="block text-sm font-medium mb-1">Etage</label>
               <input
                 type="text"
                 name="etage"
@@ -168,6 +184,7 @@ const WGUpdate = () => {
                 onChange={handleChange}
                 className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
+              <label className="block text-sm font-medium mb-1">Description</label>
               <textarea
                 name="description"
                 placeholder="Description"
@@ -223,6 +240,51 @@ const WGUpdate = () => {
           </div>
         </div>
       </div>
+      
+      {/* Transfer Creator Modal */}
+      {transferCreatorModalOpen && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Transfer Creator Status
+              </h2>
+              <button
+                onClick={() => setTransferCreatorModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Are you sure you want to transfer creator status? You will lose all creator privileges, but remain an admin.
+              </p>
+              <input
+                type="text"
+                placeholder="Enter new creator's username"
+                value={usernameToTransfer}
+                onChange={(e) => setUsernameToTransfer(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
+            <div className="mt-6 flex justify-end space-x-2">
+              <button
+                onClick={() => setTransferCreatorModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendTransferRequest}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                Transfer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
