@@ -279,72 +279,45 @@ const TaskListPage = () => {
               </Link>
             </li>
             {sortedTaskLists.map((taskList) => {
-              const userIsMember = isUserOfTaskList(taskList);
               const linkClass = `block p-4 rounded-lg transition-colors ${
-                userIsMember || isCurrentUserAdmin()
-                  ? taskList.is_checked
-                    ? "bg-green-100 hover:bg-green-200 dark:bg-green-800 dark:hover:bg-green-700"
-                    : "bg-gray-50 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
-                  : "bg-gray-200 dark:bg-gray-600 cursor-not-allowed"
+                taskList.is_checked
+                  ? "bg-green-100 hover:bg-green-200 dark:bg-green-800 dark:hover:bg-green-700"
+                  : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600"
               }`;
-              const textClass = `${
-                userIsMember || isCurrentUserAdmin()
-                  ? "text-gray-900 dark:text-white"
-                  : "text-gray-500 dark:text-gray-400"
-              }`;
-              const titleLink = userIsMember || isCurrentUserAdmin()
-                ? `/tasklist/${taskList.id}`
-                : "#";
-
+              const titleClass = taskList.is_checked
+                ? "text-green-800 dark:text-green-200 font-bold line-through"
+                : "text-gray-900 dark:text-white font-medium";
+              const descriptionClass = taskList.is_checked
+                ? "text-green-700 dark:text-green-300 text-sm line-through"
+                : "text-gray-600 dark:text-gray-400 text-sm";
+              
               return (
                 <li key={taskList.id} className="relative">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
+                    <Link to={`/tasklist/${taskList.id}`} className="flex-grow">
                       <div className={linkClass}>
                         <div className="flex items-center">
-                          <Link to={titleLink} className="flex-1">
-                            <span
-                              className={`${textClass} truncate font-medium flex-1`}
-                            >
-                              {taskList.title}
-                            </span>
-                          </Link>
-                          {isCurrentUserAdmin() && (
-                            <button
-                              onClick={() => handleToggleCheckTaskList(taskList)}
-                              className="ml-4 text-2xl"
-                            >
-                              {taskList.is_checked ? (
-                                <MdOutlineCheckBox className="text-green-500" />
-                              ) : (
-                                <MdOutlineCheckBoxOutlineBlank className="text-gray-400" />
-                              )}
-                            </button>
-                          )}
+                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleCheckTaskList(taskList); }} className="text-xl mr-2">
+                            {taskList.is_checked ? <MdOutlineCheckBox className="text-green-500" /> : <MdOutlineCheckBoxOutlineBlank className="text-gray-400" />}
+                          </button>
+                          <div>
+                            <span className={titleClass}>{taskList.title}</span>
+                            <p className={descriptionClass}>{taskList.description}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-
+                    </Link>
                     {isCurrentUserAdmin() && (
-                      <div
-                        className="relative ml-2"
-                        ref={(el) => (menuRefs.current[taskList.id] = el)}
-                      >
+                      <div className="relative">
                         <button
                           onClick={() => handleMenuToggle(taskList.id)}
-                          className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                          className="text-gray-500 dark:text-gray-400 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                          ref={(el) => (menuRefs.current[taskList.id] = el)}
                         >
                           <FaEllipsisV />
                         </button>
                         {openMenuId === taskList.id && (
-                          <div
-                            className={`absolute right-0 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg z-10
-                              ${
-                                menuDirection[taskList.id] === "up"
-                                  ? "bottom-full mb-2"
-                                  : "top-full mt-2"
-                              }`}
-                          >
+                          <div className={`absolute right-0 w-48 mt-2 py-1 bg-white dark:bg-gray-800 rounded-md shadow-xl z-10 ${menuDirection[taskList.id] === "up" ? "bottom-full mb-2" : "top-full mt-2"}`}>
                             <button
                               onClick={() => handleUpdateTaskList(taskList)}
                               className="w-full text-left flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900"

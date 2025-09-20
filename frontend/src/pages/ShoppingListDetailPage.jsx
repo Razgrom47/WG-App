@@ -266,6 +266,7 @@ const ShoppingListDetailPage = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">Add New Item</h2>
             <div className="space-y-4">
+              <label className="block text-sm font-medium mb-1">Title</label>
               <input
                 type="text"
                 placeholder="Title"
@@ -273,8 +274,9 @@ const ShoppingListDetailPage = () => {
                 onChange={(e) => setNewItemTitle(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
+              <label className="block text-sm font-medium mb-1">Description like 300 gramms or 5 pieces (Optional)</label>
               <textarea
-                placeholder="Description (Optional)"
+                placeholder="Description like 300 gramms or 5 pieces (Optional)"
                 value={newItemDescription}
                 onChange={(e) => setNewItemDescription(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"

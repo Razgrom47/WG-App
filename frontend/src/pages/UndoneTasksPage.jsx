@@ -243,84 +243,92 @@ const UndoneTasksPage = () => {
             {tasks.map((task) => {
               const userIsAssigned = isUserAssignedToTask(task);
               const userIsAdmin = isCurrentUserAdmin();
-              const cardClass = `p-4 rounded-lg transition-colors ${
-                userIsAssigned || userIsAdmin
-                  ? "bg-gray-50 dark:bg-gray-700"
-                  : "bg-gray-200 dark:bg-gray-600 cursor-not-allowed"
-              }`;
+              const linkClass = `block p-4 rounded-lg transition-colors ${task.is_done ? "bg-green-100 hover:bg-green-200 dark:bg-green-800 dark:hover:bg-green-700" : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600"}`;
+              const titleClass = task.is_done ? "text-green-800 dark:text-green-200 font-bold line-through" : "text-gray-900 dark:text-white font-medium";
+              const descriptionClass = task.is_done ? "text-green-700 dark:text-green-300 text-sm line-through" : "text-gray-600 dark:text-gray-400 text-sm";
               const userNames = task.users.map((u) => u.name).join(", ");
-
               return (
                 <li key={task.id} className="relative">
-                  <div className={`${cardClass} flex flex-col`}>
-                    <div className="flex justify-between items-start">
-                      <div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-grow">
+                      <div className={linkClass}>
                         <div className="flex items-center">
-                          <h3 className="text-lg font-semibold">{task.title}</h3>
-                          {userIsAssigned && (
-                              <button
-                                onClick={() => handleToggleCheckTask(task)}
-                                className="ml-4 text-2xl"
-                              >
-                                {task.is_done ? (
-                                  <MdOutlineCheckBox className="text-green-500" />
-                                ) : (
-                                  <MdOutlineCheckBoxOutlineBlank className="text-gray-400" />
-                                )}
-                              </button>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
-                          {task.description || "No description"}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Start: {task.start_date ? new Date(task.start_date).toLocaleDateString() : "N/A"} <br />
-                          End: {task.end_date ? new Date(task.end_date).toLocaleDateString() : "N/A"}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Assigned: {userNames || "None"}
-                        </p>
-                      </div>
-
-                      {userIsAdmin && (
-                        <div
-                          className="relative ml-2"
-                          ref={(el) => (menuRefs.current[task.id] = el)}
-                        >
-                          <button
-                            onClick={() => handleMenuToggle(task.id)}
-                            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                          >
-                            <FaEllipsisV />
-                          </button>
-                          {openMenuId === task.id && (
-                            <div
-                              className={`absolute right-0 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg z-10
-                                ${menuDirection[task.id] === "up" ? "bottom-full mb-2" : "top-full mt-2"}`}
+                          {/* Checkbox button, only show if user is assigned or is admin */}
+                          {(userIsAssigned || userIsAdmin) && (
+                            <button
+                              onClick={() => handleToggleCheckTask(task)}
+                              className="text-xl mr-2"
                             >
-                              <button
+                              {task.is_done ? (
+                                <MdOutlineCheckBox className="text-green-500" />
+                              ) : (
+                                <MdOutlineCheckBoxOutlineBlank className="text-gray-400" />
+                              )}
+                            </button>
+                          )}
+                          <div>
+                            <span className={titleClass}>{task.title}</span>
+                            <p className={descriptionClass}>{task.description || "No description"}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Start: {task.start_date ? new Date(task.start_date).toLocaleDateString() : "N/A"} <br />
+                              End: {task.end_date ? new Date(task.end_date).toLocaleDateString() : "N/A"}
+                            </p>
+                            {userNames && (
+                              <p
+                                className={`${descriptionClass} text-xs mt-1`}
+                              >
+                                Assigned to: {userNames}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {userIsAdmin && (
+                      <div
+                        className="relative ml-2"
+                        ref={(el) => (menuRefs.current[task.id] = el)}
+                      >
+                        <button
+                          onClick={() => handleMenuToggle(task.id)}
+                          className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <FaEllipsisV />
+                        </button>
+                        {openMenuId === task.id && (
+                          <div
+                            className={`absolute right-0 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg z-10
+                              ${
+                                menuDirection[task.id] === "up"
+                                  ? "bottom-full mb-2"
+                                  : "top-full mt-2"
+                              }`}
+                          >
+                            <button
                                 onClick={() => handleUpdateTask(task)}
                                 className="w-full text-left flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900"
-                              >
-                                <FaEdit className="mr-2" /> Update
-                              </button>
-                              <button
-                                onClick={() => openAssignModal(task)}
-                                className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900"
-                              >
-                                <FaUserPlus className="mr-2" /> Assign Users
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTask(task.id)}
-                                className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
-                              >
-                                <FaTrash className="mr-2" /> Delete
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                            >
+                                <FaEdit className="mr-2" />
+                                Edit
+                            </button>
+                            <button
+                              onClick={() => openAssignModal(task)}
+                              className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900"
+                            >
+                              <FaUserPlus className="mr-2" />
+                              Assign/Unassign Users
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+                            >
+                              <FaTrash className="mr-2" />
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </li>
               );

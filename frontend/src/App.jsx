@@ -12,6 +12,8 @@ import TaskListDetailPage from "./pages/TaskListDetailPage";
 import UndoneTasksPage from "./pages/UndoneTasksPage";
 import ShoppingListPage from "./pages/ShoppingListPage";
 import ShoppingListDetailPage from "./pages/ShoppingListDetailPage";
+import BudgetPlansPage from "./pages/BudgetPlansPage";
+import BudgetPlanDetailPage from "./pages/BudgetPlanDetailPage";
 
 // A new Layout component to wrap pages that should have the theme toggle
 const Layout = ({ children }) => {
@@ -78,12 +80,13 @@ function App() {
       />
       {/* New Protected Routes for WG Management Sections */}
       <Route path="/wg/:id/manage" element={<ProtectedRoute><WGUpdate /></ProtectedRoute>} />
-      <Route path="/wg/:id/budget_plans" element={<ProtectedRoute> {/* Add a new BudgetPage */} </ProtectedRoute>} />
       <Route path="/wg/:id/task_lists" element={<ProtectedRoute>  <TaskListPage/> </ProtectedRoute>} />
-      <Route path="/wg/:id/shopping_lists" element={<ProtectedRoute> <ShoppingListPage/> </ProtectedRoute>} />
-      <Route path="/shoppinglist/:id" element={<ProtectedRoute><ShoppingListDetailPage /></ProtectedRoute>} />
       <Route path="/tasklist/:id" element={<ProtectedRoute><TaskListDetailPage /></ProtectedRoute>} />
       <Route path="/wg/:id/undone-tasks" element={<ProtectedRoute><UndoneTasksPage /></ProtectedRoute>} />
+      <Route path="/wg/:id/shopping_lists" element={<ProtectedRoute> <ShoppingListPage/> </ProtectedRoute>} />
+      <Route path="/shoppinglist/:id" element={<ProtectedRoute><ShoppingListDetailPage /></ProtectedRoute>} />
+      <Route path="/wg/:id/budget_plans" element={<ProtectedRoute> <BudgetPlansPage/> </ProtectedRoute>} />
+      <Route path="/budgetplan/:id" element={<ProtectedRoute><BudgetPlanDetailPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

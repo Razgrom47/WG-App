@@ -188,11 +188,17 @@ const WGPage = () => {
           Back to Home
         </button>
         <h1 className="text-3xl font-bold mb-2">{wg.title}</h1>
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          {wg.is_public ? 'Public' : 'Private'}
+        </span>
+        {wg.is_public && (<label className="block text-sm font-medium mb-10">Joining Code: {wg.id}</label>)}
+        <label className="block text-sm font-medium mb-1">Description</label>
         <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
-          {wg.description}
+          {wg.description || "No description provided."}
         </p>
+        <label className="block text-sm font-medium mb-1">Address</label>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Address: {wg.address} - Etage {wg.etage}
+          Street & Nr.: {wg.address} - Etage: {wg.etage}
         </p>
 
         {/* Action Buttons */}

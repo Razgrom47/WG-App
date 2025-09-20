@@ -220,6 +220,7 @@ def add_task(tasklist_id):
         is_done=False,
         is_template=False,
     )
+    task_list.is_checked = False
     db.session.add(task)
     db.session.commit()
     return jsonify({'id': task.idTask, 'title': task.title}), 201

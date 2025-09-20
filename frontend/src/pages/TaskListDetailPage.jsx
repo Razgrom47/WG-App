@@ -108,7 +108,7 @@ const TaskListDetailPage = () => {
   };
 
   const handleCreateTask = () => {
-    setCreateTaskModalOpen(true);
+      setCreateTaskModalOpen(true);
   };
 
   const handleSaveNewTask = async () => {
@@ -298,34 +298,21 @@ const TaskListDetailPage = () => {
           <ul className="space-y-4">
             {sortedTasks.map((task) => {
               const userIsAssigned = isUserOfTask(task);
-              const linkClass = `block p-4 rounded-lg transition-colors ${
-                userIsAssigned || isCurrentUserAdmin()
-                  ? task.is_done
-                    ? "bg-green-100 hover:bg-green-200 dark:bg-green-800 dark:hover:bg-green-700"
-                    : "bg-gray-50 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
-                  : "bg-gray-200 dark:bg-gray-600 cursor-not-allowed"
-              }`;
-              const textClass = `${
-                userIsAssigned || isCurrentUserAdmin()
-                  ? "text-gray-900 dark:text-white"
-                  : "text-gray-500 dark:text-gray-400"
-              }`;
+              const linkClass = `block p-4 rounded-lg transition-colors ${task.is_done ? "bg-green-100 hover:bg-green-200 dark:bg-green-800 dark:hover:bg-green-700" : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600"}`;
+              const titleClass = task.is_done ? "text-green-800 dark:text-green-200 font-bold line-through" : "text-gray-900 dark:text-white font-medium";
+              const descriptionClass = task.is_done ? "text-green-700 dark:text-green-300 text-sm line-through" : "text-gray-600 dark:text-gray-400 text-sm";
               const userNames = task.users.map((u) => u.name).join(", ");
               return (
                 <li key={task.id} className="relative">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-grow">
                       <div className={linkClass}>
                         <div className="flex items-center">
-                          <span
-                            className={`${textClass} truncate font-medium flex-1`}
-                          >
-                            {task.title}
-                          </span>
-                          {userIsAssigned && (
+                          {/* Checkbox button, only show if user is assigned or is admin */}
+                          {(userIsAssigned || isCurrentUserAdmin()) && (
                             <button
                               onClick={() => handleToggleCheckTask(task.id, task.is_done)}
-                              className="ml-4 text-2xl"
+                              className="text-xl mr-2"
                             >
                               {task.is_done ? (
                                 <MdOutlineCheckBox className="text-green-500" />
@@ -334,35 +321,31 @@ const TaskListDetailPage = () => {
                               )}
                             </button>
                           )}
+                          <div>
+                            <span className={titleClass}>{task.title}</span>
+                            <p className={descriptionClass}>{task.description}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Start:{" "}
+                              {task.start_date
+                                ? new Date(task.start_date).toLocaleDateString()
+                                : "N/A"}{" "}
+                              | End:{" "}
+                              {task.end_date
+                                ? new Date(task.end_date).toLocaleDateString()
+                                : "N/A"}
+                            </p>
+                            {userNames && (
+                              <p
+                                className={`${descriptionClass} text-xs mt-1`}
+                              >
+                                Assigned to: {userNames}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        {task.description && (
-                          <p
-                            className={`${textClass} text-sm mt-1 truncate`}
-                          >
-                            {task.description || "No description"}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-500 mt-1">
-                          Start:{" "}
-                          {task.start_date
-                            ? new Date(task.start_date).toLocaleDateString()
-                            : "N/A"}{" "}
-                          <br />
-                          End:{" "}
-                          {task.end_date
-                            ? new Date(task.end_date).toLocaleDateString()
-                            : "N/A"}
-                        </p>
-                        {userNames && (
-                          <p
-                            className={`${textClass} text-xs mt-1 text-gray-400`}
-                          >
-                            Assigned to: {userNames}
-                          </p>
-                        )}
                       </div>
                     </div>
-                    {(isCurrentUserAdmin() || userIsAssigned) && (
+                    {(isCurrentUserAdmin()) && (
                       <div
                         className="relative ml-2"
                         ref={(el) => (menuRefs.current[task.id] = el)}

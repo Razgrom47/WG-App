@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, g
 from extensions import db
 from models import BudgetPlanning, Cost, WG, User
 from decorators import token_required
+from datetime import datetime
 
 budget_planning_bp = Blueprint('budget_planning_bp', __name__)
 
@@ -19,9 +20,9 @@ def serialize_budgetplanning(bp):
         'title': bp.title,
         'description': bp.description,
         'goal': bp.goal,
-        'deadline': bp.deadline,
-        'created_date': bp.created_date,
-        'creator': {'id': bp.creator_id},
+        'deadline': bp.deadline.isoformat() if bp.deadline else None,
+        'created_date': bp.created_date.isoformat() if bp.created_date else None,
+        'creator': {'id': bp.creator_id, 'name': bp.creator.strUser if bp.creator else None},
         'wg_id': bp.wg_id,
         'users': [{'id': u.idUser, 'name': u.strUser} for u in bp.users],
         'costs': [
@@ -40,7 +41,7 @@ def serialize_budgetplanning(bp):
 @token_required
 def create_budget_planning():
     """
-    Create a new budget planning
+    Create a new budget planning.
     ---
     tags:
       - BudgetPlanning
@@ -52,9 +53,116 @@ def create_budget_planning():
         application/json:
           schema:
             type: object
+            required:
+              - title
+              - wg_id
             properties:
+              title:
+                type: string
+              description:
+                type: string
+              goal:
+                type: number
+              deadline:
+                type: string
+                format: date
               wg_id:
                 type: integer
+    responses:
+      201:
+        description: Budget planning created successfully
+    """
+    data = request.get_json()
+    title = data.get('title')
+    description = data.get('description')
+    goal = data.get('goal')
+    deadline_str = data.get('deadline')
+    wg_id = data.get('wg_id')
+
+    if not all([title, wg_id]):
+        return jsonify({'message': 'Missing required fields'}), 400
+
+    # Check if the user is a member of the WG
+    if not is_user_of_wg(g.current_user, wg_id):
+        return jsonify({'message': 'Not authorized to create budget planning in this WG'}), 403
+
+    deadline = None
+    if deadline_str:
+        try:
+            deadline = datetime.strptime(deadline_str, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'message': 'Invalid date format for deadline. Use YYYY-MM-DD'}), 400
+
+    new_budget_planning = BudgetPlanning(
+        title=title,
+        description=description,
+        goal=goal,
+        deadline=deadline,
+        creator_id=g.current_user.idUser,
+        wg_id=wg_id
+    )
+
+    db.session.add(new_budget_planning)
+    db.session.commit()
+
+    return jsonify(serialize_budgetplanning(new_budget_planning)), 201
+
+@budget_planning_bp.route('/budgetplanning/<int:budgetplanning_id>', methods=['GET'])
+@token_required
+def get_budget_planning(budgetplanning_id):
+    """
+    Get a specific budget planning by ID
+    ---
+    tags:
+      - BudgetPlanning
+    security:
+      - Bearer: []
+    parameters:
+      - name: budgetplanning_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: Budget planning details
+      403:
+        description: Not authorized
+      404:
+        description: Budget planning not found
+    """
+    bp = BudgetPlanning.query.get(budgetplanning_id)
+    if not bp:
+        return jsonify({'message': 'Budget planning not found'}), 404
+    
+    if not is_user_of_wg(g.current_user, bp.wg_id):
+        return jsonify({'message': 'Not authorized to view this budget planning'}), 403
+
+    return jsonify(serialize_budgetplanning(bp)), 200
+
+@budget_planning_bp.route('/budgetplanning/<int:budgetplanning_id>', methods=['PUT'])
+@token_required
+def update_budget_planning(budgetplanning_id):
+    """
+    Update a budget planning
+    ---
+    tags:
+      - BudgetPlanning
+    security:
+      - Bearer: []
+    parameters:
+      - name: budgetplanning_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
               title:
                 type: string
               description:
@@ -65,30 +173,37 @@ def create_budget_planning():
                 type: string
                 format: date-time
     responses:
-      201:
-        description: Budget planning created
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BudgetPlanning'
-      403:
-        description: Not authorized
+      200:
+        description: Budget planning updated successfully
+      404:
+        description: Budget planning not found
     """
+    bp = BudgetPlanning.query.get(budgetplanning_id)
+    if not bp or not is_user_of_wg(g.current_user, bp.wg_id):
+        return jsonify({'message': 'Not authorized or not found'}), 404
+    
     data = request.get_json()
-    wg_id = data['wg_id']
-    if not is_user_of_wg(g.current_user, wg_id):
-        return jsonify({'message': 'Not authorized'}), 403
-    new_bp = BudgetPlanning(
-        title=data['title'],
-        description=data.get('description'),
-        goal=data.get('goal'),
-        deadline=data.get('deadline'),
-        creator_id=g.current_user.idUser,
-        wg_id=wg_id
-    )
-    db.session.add(new_bp)
+    
+    if 'title' in data:
+        bp.title = data['title']
+    if 'description' in data:
+        bp.description = data['description']
+    if 'goal' in data:
+        bp.goal = data['goal']
+    
+    # Handle the deadline update
+    if 'deadline' in data:
+        deadline_str = data['deadline']
+        if deadline_str:
+            try:
+                bp.deadline = datetime.strptime(deadline_str, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'message': 'Invalid date format for deadline. Use YYYY-MM-DD'}), 400
+        else:
+            bp.deadline = None
+
     db.session.commit()
-    return jsonify(serialize_budgetplanning(new_bp)), 201
+    return jsonify({'message': 'Budget planning updated successfully'}), 200
 
 @budget_planning_bp.route('/budgetplanning/<int:budgetplanning_id>', methods=['DELETE'])
 @token_required
@@ -221,52 +336,3 @@ def check_cost(budgetplanning_id):
     cost.paid = data.get('paid', cost.paid)
     db.session.commit()
     return jsonify({'message': 'Cost updated successfully', 'paid': cost.paid}), 200
-
-@budget_planning_bp.route('/budgetplanning/<int:budgetplanning_id>', methods=['PUT'])
-@token_required
-def update_budget_planning(budgetplanning_id):
-    """
-    Update a budget planning
-    ---
-    tags:
-      - BudgetPlanning
-    security:
-      - Bearer: []
-    parameters:
-      - name: budgetplanning_id
-        in: path
-        required: true
-        schema:
-          type: integer
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              title:
-                type: string
-              description:
-                type: string
-              goal:
-                type: number
-              deadline:
-                type: string
-                format: date-time
-    responses:
-      200:
-        description: Budget planning updated successfully
-      404:
-        description: Budget planning not found
-    """
-    bp = BudgetPlanning.query.get(budgetplanning_id)
-    if not bp or not is_user_of_wg(g.current_user, bp.wg_id):
-        return jsonify({'message': 'Not authorized or not found'}), 404
-    data = request.get_json()
-    bp.title = data.get('title', bp.title)
-    bp.description = data.get('description', bp.description)
-    bp.goal = data.get('goal', bp.goal)
-    bp.deadline = data.get('deadline', bp.deadline)
-    db.session.commit()
-    return jsonify(serialize_budgetplanning(bp)), 200

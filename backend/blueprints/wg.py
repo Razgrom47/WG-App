@@ -643,3 +643,47 @@ def get_shoppinglists_for_wg(wg_id):
                       'creator': {'id': sl.creator_id, 'name': sl.creator.strUser if sl.creator else None}
                      } for sl in wg.shoppinglists]
     return jsonify({'shoppinglists': shoppinglists}), 200
+
+
+@wg_bp.route('/wg/<int:wg_id>/budgetplanning', methods=['GET'])
+@token_required
+def get_budgetplannings_for_wg(wg_id):
+    """
+    Get all budget plannings for a specific WG.
+    ---
+    tags:
+      - WG
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: wg_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: List of budget plannings retrieved successfully
+      403:
+        description: Not authorized
+      404:
+        description: WG not found
+    """
+    wg = WG.query.get(wg_id)
+    if not wg:
+        return jsonify({'message': 'WG not found'}), 404
+
+    if not is_user_of_wg(g.current_user, wg_id):
+        return jsonify({'message': 'Not authorized'}), 403
+
+    # Assuming a relationship 'budgetplannings' exists on the WG model
+    budgetplannings = [{
+        'id': bp.idBudgetPlanning,
+        'title': bp.title,
+        'description': bp.description,
+        'goal': bp.goal,
+        'deadline': bp.deadline,
+        'created_date': bp.created_date,
+        'creator': {'id': bp.creator_id, 'name': bp.creator.strUser if bp.creator else None}
+    } for bp in wg.budgetplannings]
+    return jsonify({'budgetplannings': budgetplannings}), 200

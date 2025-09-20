@@ -60,6 +60,7 @@ def create_item():
         description=data.get('description', ''),
         shoppinglist_id=data['shoppinglist_id']
     )
+    shopping_list.is_checked = False
     db.session.add(new_item)
     db.session.commit()
     return jsonify(serialize_item(new_item)), 201

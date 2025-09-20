@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 import api from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
 
@@ -8,10 +9,11 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const baseURL = api.defaults.baseURL;
 
-  // NEW: Function to handle profile updates and new token from the backend
+  // Function to handle profile updates and new token from the backend
   const updateUser = async (formData) => {
     try {
       const res = await api.put("/user", formData);
@@ -24,7 +26,7 @@ export const AuthProvider = ({ children }) => {
       return false;
     } catch (err) {
       console.error("Update failed", err);
-      throw err; // Re-throw the error to be handled by the component
+      throw err;
     }
   };
 
@@ -41,18 +43,21 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem("token");
             setToken(null);
             setUser(null);
+            navigate("/login");
           }
         })
         .catch(() => {
+          // API call failed (e.g., network error or 401/403)
           localStorage.removeItem("token");
           setToken(null);
           setUser(null);
+          navigate("/login");
         })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [navigate]);
 
   const login = async (identifier, password) => {
     try {
@@ -102,6 +107,7 @@ export const AuthProvider = ({ children }) => {
       setToken(null);
       setUser(null);
       localStorage.removeItem("token");
+      navigate("/login");
     }
   };
 
@@ -112,12 +118,12 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     register,
-    updateUser, // Make the new updateUser function available
+    updateUser,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

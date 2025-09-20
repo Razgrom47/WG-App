@@ -237,17 +237,31 @@ def leave_wg(wg_id):
         content:
           application/json:
             example: {"message": "User left WG successfully"}
+      403:
+        description: Not authorized to leave or creator cannot leave
       404:
-        description: User not in WG or WG not found
+        description: WG or user not found
     """
     user = g.current_user
     if user:
         wg = WG.query.get(wg_id)
-        if wg and user in wg.users:
-            wg.users.remove(user)
-            if user in wg.admins:
-              wg.admins.remove(user)
-            db.session.commit()
-            return jsonify({'message': 'User left WG successfully'}), 200
-        return jsonify({'message': 'User not in WG or WG not found'}), 404
+        if not wg:
+            return jsonify({'message': 'WG not found'}), 404
+
+        if user not in wg.users:
+            return jsonify({'message': 'User is not in the WG'}), 403
+
+        # Prevent creator from leaving
+        if user == wg.creator:
+            return jsonify({'message': 'Creator cannot leave the WG. Transfer creator status first.'}), 403
+
+        # Remove user from the WG's user list
+        wg.users.remove(user)
+
+        # Remove user from the WG's admin list if they are an admin
+        if user in wg.admins:
+            wg.admins.remove(user)
+
+        db.session.commit()
+        return jsonify({'message': 'User left WG successfully'}), 200
     return jsonify({'user': None}), 404
