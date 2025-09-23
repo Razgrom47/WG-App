@@ -1,9 +1,20 @@
 import axios from "axios";
 
-const api = axios.create({
-  baseURL: "http://127.0.0.1:7701",
-  withCredentials: false, // 🚫 do not send cookies
-});
+let api = axios.create({})
+
+if (process.env.NODE_ENV === "development") {
+    api = axios.create({
+        baseURL: "http://127.0.0.1:7701",
+        withCredentials: false,
+    });
+} else {
+    api = axios.create({
+        baseURL: "http://localhost/api",
+        withCredentials: false,
+    });
+}
+
+
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");

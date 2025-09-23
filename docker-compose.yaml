@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: myapp
+      POSTGRES_USER: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: ./backend
+    # Port nur intern verfügbar (kein externes Mapping)
+    expose:
+      - "7700"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/myapp
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      target: production  # Nginx stage
+    ports:
+      - "80:80"  # Nur Frontend ist extern verfügbar
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
