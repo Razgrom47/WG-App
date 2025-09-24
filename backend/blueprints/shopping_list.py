@@ -78,7 +78,7 @@ def create_shopping_list():
     db.session.commit()
     return jsonify(serialize_shoppinglist(new_list)), 201
 
-@shopping_list_bp.route('/shoppinglist/<int:shoppinglist_id>', methods=['GET'])
+@shopping_list_bp.route('/shoppinglist/<string:shoppinglist_id>', methods=['GET'])
 @token_required
 def get_shopping_list(shoppinglist_id):
     """
@@ -109,7 +109,7 @@ def get_shopping_list(shoppinglist_id):
         return jsonify({'message': 'Not authorized'}), 403
     return jsonify(serialize_shoppinglist(shopping_list)), 200
 
-@shopping_list_bp.route('/shoppinglist/<int:shoppinglist_id>', methods=['DELETE'])
+@shopping_list_bp.route('/shoppinglist/<string:shoppinglist_id>', methods=['DELETE'])
 @token_required
 def delete_shopping_list(shoppinglist_id):
     """
@@ -144,7 +144,7 @@ def delete_shopping_list(shoppinglist_id):
     db.session.commit()
     return jsonify({'message': 'Shopping list deleted successfully'}), 204
 
-@shopping_list_bp.route('/shoppinglist/<int:shoppinglist_id>', methods=['PUT'])
+@shopping_list_bp.route('/shoppinglist/<string:shoppinglist_id>', methods=['PUT'])
 @token_required
 def update_shopping_list(shoppinglist_id):
     """
@@ -186,7 +186,7 @@ def update_shopping_list(shoppinglist_id):
     db.session.commit()
     return jsonify(serialize_shoppinglist(shopping_list)), 200
 
-@shopping_list_bp.route('/shoppinglist/<int:shoppinglist_id>/check', methods=['PUT'])
+@shopping_list_bp.route('/shoppinglist/<string:shoppinglist_id>/check', methods=['PUT'])
 @token_required
 def check_shopping_list(shoppinglist_id):
     """

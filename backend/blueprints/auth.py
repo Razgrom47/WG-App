@@ -70,7 +70,7 @@ def login():
         return jsonify({"message": "Unable to verify"}), 403
 
     token = jwt.encode({
-        "user_id": user.idUser,
+        "user_id": str(user.idUser),
         "username": user.strUser,
         "email": user.strEmail,
         "exp": datetime.utcnow() + timedelta(minutes=10)

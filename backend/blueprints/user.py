@@ -167,7 +167,7 @@ def delete_user():
         return jsonify({'message': 'User deleted successfully'}), 204
     return jsonify({'user': None}), 404
 
-@user_bp.route('/user/join/<int:wg_id>', methods=['POST'])
+@user_bp.route('/user/join/<string:wg_id>', methods=['POST'])
 @token_required
 def join_wg(wg_id):
     """
@@ -214,7 +214,7 @@ def join_wg(wg_id):
         return jsonify({'message': 'User joined WG successfully'}), 200
     return jsonify({'user': None}), 404
 
-@user_bp.route('/user/leave/<int:wg_id>', methods=['POST'])
+@user_bp.route('/user/leave/<string:wg_id>', methods=['POST'])
 @token_required
 def leave_wg(wg_id):
     """

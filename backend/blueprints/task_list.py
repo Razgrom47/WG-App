@@ -40,7 +40,7 @@ def serialize_tasklist(tasklist):
     }
 
 
-@task_list_bp.route('/tasklist/<int:tasklist_id>', methods=['GET'])
+@task_list_bp.route('/tasklist/<string:tasklist_id>', methods=['GET'])
 @token_required
 def get_task_list(tasklist_id):
     """
@@ -133,7 +133,7 @@ def create_task_list():
     return jsonify(serialize_tasklist(new_task_list)), 201
 
 
-@task_list_bp.route('/tasklist/<int:tasklist_id>', methods=['DELETE'])
+@task_list_bp.route('/tasklist/<string:tasklist_id>', methods=['DELETE'])
 @token_required
 def delete_task_list(tasklist_id):
     """
@@ -167,7 +167,7 @@ def delete_task_list(tasklist_id):
     return jsonify({'message': 'Task list deleted successfully'}), 204
 
 
-@task_list_bp.route('/tasklist/<int:tasklist_id>/add_task', methods=['POST'])
+@task_list_bp.route('/tasklist/<string:tasklist_id>/add_task', methods=['POST'])
 @token_required
 def add_task(tasklist_id):
     """
@@ -226,7 +226,7 @@ def add_task(tasklist_id):
     return jsonify({'id': task.idTask, 'title': task.title}), 201
 
 
-# @task_list_bp.route('/tasklist/<int:tasklist_id>/add_task_from_template', methods=['POST'])
+# @task_list_bp.route('/tasklist/<string:tasklist_id>/add_task_from_template', methods=['POST'])
 # @token_required
 # def add_task_from_template(tasklist_id):
 #     """
@@ -316,7 +316,7 @@ def add_task(tasklist_id):
 #     return jsonify({'id': template_task.idTask, 'title': template_task.title}), 201
 
 
-@task_list_bp.route('/tasklist/<int:tasklist_id>/assign_users', methods=['POST'])
+@task_list_bp.route('/tasklist/<string:tasklist_id>/assign_users', methods=['POST'])
 @token_required
 def assign_users_to_tasklist(tasklist_id):
     """
@@ -363,7 +363,7 @@ def assign_users_to_tasklist(tasklist_id):
     return jsonify({'message': 'Users assigned to task list successfully'}), 200
 
 
-@task_list_bp.route('/tasklist/<int:tasklist_id>/remove_users', methods=['POST'])
+@task_list_bp.route('/tasklist/<string:tasklist_id>/remove_users', methods=['POST'])
 @token_required
 def remove_users_from_tasklist(tasklist_id):
     """
@@ -420,7 +420,7 @@ def remove_users_from_tasklist(tasklist_id):
     return jsonify({'message': 'Users unassigned from task list successfully'}), 200
 
 
-@task_list_bp.route('/tasklist/<int:tasklist_id>/check_tasklist', methods=['POST'])
+@task_list_bp.route('/tasklist/<string:tasklist_id>/check_tasklist', methods=['POST'])
 @token_required
 def check_tasklist(tasklist_id):
     """
@@ -467,7 +467,7 @@ def check_tasklist(tasklist_id):
     return jsonify({'message': 'Task list and tasks checked successfully'}), 200
 
 
-@task_list_bp.route('/tasklist/<int:tasklist_id>/uncheck_tasklist', methods=['POST'])
+@task_list_bp.route('/tasklist/<string:tasklist_id>/uncheck_tasklist', methods=['POST'])
 @token_required
 def uncheck_tasklist(tasklist_id):
     """
@@ -510,7 +510,7 @@ def uncheck_tasklist(tasklist_id):
     return jsonify({'message': 'Task list unchecked successfully'}), 200
 
 
-@task_list_bp.route('/tasklist/<int:tasklist_id>', methods=['PUT'])
+@task_list_bp.route('/tasklist/<string:tasklist_id>', methods=['PUT'])
 @token_required
 def update_tasklist(tasklist_id):
     """

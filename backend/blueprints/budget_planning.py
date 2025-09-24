@@ -107,7 +107,7 @@ def create_budget_planning():
 
     return jsonify(serialize_budgetplanning(new_budget_planning)), 201
 
-@budget_planning_bp.route('/budgetplanning/<int:budgetplanning_id>', methods=['GET'])
+@budget_planning_bp.route('/budgetplanning/<string:budgetplanning_id>', methods=['GET'])
 @token_required
 def get_budget_planning(budgetplanning_id):
     """
@@ -140,7 +140,7 @@ def get_budget_planning(budgetplanning_id):
 
     return jsonify(serialize_budgetplanning(bp)), 200
 
-@budget_planning_bp.route('/budgetplanning/<int:budgetplanning_id>', methods=['PUT'])
+@budget_planning_bp.route('/budgetplanning/<string:budgetplanning_id>', methods=['PUT'])
 @token_required
 def update_budget_planning(budgetplanning_id):
     """
@@ -205,7 +205,7 @@ def update_budget_planning(budgetplanning_id):
     db.session.commit()
     return jsonify({'message': 'Budget planning updated successfully'}), 200
 
-@budget_planning_bp.route('/budgetplanning/<int:budgetplanning_id>', methods=['DELETE'])
+@budget_planning_bp.route('/budgetplanning/<string:budgetplanning_id>', methods=['DELETE'])
 @token_required
 def delete_budget_planning(budgetplanning_id):
     """
@@ -238,7 +238,7 @@ def delete_budget_planning(budgetplanning_id):
     db.session.commit()
     return jsonify({'message': 'Budget planning deleted successfully'}), 204
 
-@budget_planning_bp.route('/budgetplanning/<int:budgetplanning_id>/add_cost', methods=['POST'])
+@budget_planning_bp.route('/budgetplanning/<string:budgetplanning_id>/add_cost', methods=['POST'])
 @token_required
 def add_cost(budgetplanning_id):
     """
@@ -295,7 +295,7 @@ def add_cost(budgetplanning_id):
     db.session.commit()
     return jsonify({'id': new_cost.idCost, 'title': new_cost.title}), 201
 
-@budget_planning_bp.route('/budgetplanning/<int:budgetplanning_id>/check_cost', methods=['POST'])
+@budget_planning_bp.route('/budgetplanning/<string:budgetplanning_id>/check_cost', methods=['POST'])
 @token_required
 def check_cost(budgetplanning_id):
     """

@@ -23,7 +23,7 @@ def serialize_task(task):
         'users': [{'id': u.idUser, 'name': u.strUser} for u in task.users]
     }
 
-@task_bp.route('/task/<int:task_id>', methods=['GET'])
+@task_bp.route('/task/<string:task_id>', methods=['GET'])
 @token_required
 def get_task(task_id):
     """
@@ -137,7 +137,7 @@ def get_task(task_id):
 #     db.session.commit()
 #     return jsonify(serialize_task(new_task)), 201
 
-@task_bp.route('/task/<int:task_id>', methods=['PUT'])
+@task_bp.route('/task/<string:task_id>', methods=['PUT'])
 @token_required
 def update_task(task_id):
     """
@@ -296,7 +296,7 @@ def update_task(task_id):
     db.session.refresh(task)
     return jsonify(serialize_task(task)), 200
 
-@task_bp.route('/task/<int:task_id>', methods=['DELETE'])
+@task_bp.route('/task/<string:task_id>', methods=['DELETE'])
 @token_required
 def delete_task(task_id):
     """
@@ -337,7 +337,7 @@ def delete_task(task_id):
     db.session.commit()
     return jsonify({'message': 'Task deleted successfully'}), 204
 
-@task_bp.route('/tasks/undone/wg/<int:wg_id>', methods=['GET'])
+@task_bp.route('/tasks/undone/wg/<string:wg_id>', methods=['GET'])
 @token_required
 def get_undone_tasks_for_wg(wg_id):
     """
@@ -385,7 +385,7 @@ def get_undone_tasks_for_wg(wg_id):
 
     return jsonify([serialize_task(task) for task in tasks]), 200
 
-@task_bp.route('/task/<int:task_id>/check', methods=['POST'])
+@task_bp.route('/task/<string:task_id>/check', methods=['POST'])
 @token_required
 def check_task(task_id):
     """
@@ -434,7 +434,7 @@ def check_task(task_id):
       return jsonify({'message': 'Task marked as done'}), 200
     
 
-@task_bp.route('/task/<int:task_id>/assign_users', methods=['POST'])
+@task_bp.route('/task/<string:task_id>/assign_users', methods=['POST'])
 @token_required
 def assign_users_to_task(task_id):
     """
@@ -498,7 +498,7 @@ def assign_users_to_task(task_id):
         db.session.rollback()
         return jsonify({'message': f'Error assigning users to task: {str(e)}'}), 500
 
-@task_bp.route('/task/<int:task_id>/remove_users', methods=['POST'])
+@task_bp.route('/task/<string:task_id>/remove_users', methods=['POST'])
 @token_required
 def remove_users_from_task(task_id):
     """

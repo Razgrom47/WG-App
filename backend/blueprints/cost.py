@@ -75,7 +75,7 @@ def create_cost():
     db.session.commit()
     return jsonify(serialize_cost(new_cost)), 201
 
-@cost_bp.route('/cost/<int:cost_id>', methods=['PUT'])
+@cost_bp.route('/cost/<string:cost_id>', methods=['PUT'])
 @token_required
 def update_cost(cost_id):
     """
@@ -137,7 +137,7 @@ def update_cost(cost_id):
     db.session.commit()
     return jsonify(serialize_cost(cost)), 200
 
-@cost_bp.route('/cost/<int:cost_id>', methods=['DELETE'])
+@cost_bp.route('/cost/<string:cost_id>', methods=['DELETE'])
 @token_required
 def delete_cost(cost_id):
     """

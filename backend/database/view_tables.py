@@ -46,6 +46,9 @@ with sqlite3.connect(db_path) as conn:
     tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
     # print("\n=== Tables in DB ===")
     # for t in tables:
+    #     delete_statement = f"DELETE FROM {t[0]};"
+    #     conn.execute(delete_statement)
+    # conn.commit()
     #     print(t[0])
 
     for table in tables:

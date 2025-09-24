@@ -111,7 +111,7 @@ def create_wg():
                     'creator': {'id': new_wg.creator.idUser, 'name': new_wg.creator.strUser}, }), 201
 
 
-@wg_bp.route('/wg/<int:wg_id>', methods=['DELETE'])
+@wg_bp.route('/wg/<string:wg_id>', methods=['DELETE'])
 @token_required
 def delete_wg(wg_id):
     """
@@ -147,7 +147,7 @@ def delete_wg(wg_id):
     return jsonify({'message': 'WG deleted successfully'}), 204
 
 
-@wg_bp.route('/wg/<int:wg_id>/invite_by_username', methods=['POST'])
+@wg_bp.route('/wg/<string:wg_id>/invite_by_username', methods=['POST'])
 @token_required
 def invite_user_by_username(wg_id):
     """
@@ -204,7 +204,7 @@ def invite_user_by_username(wg_id):
     return jsonify({'message': 'User invited successfully'}), 200
 
 
-@wg_bp.route('/wg/<int:wg_id>/kick', methods=['POST'])
+@wg_bp.route('/wg/<string:wg_id>/kick', methods=['POST'])
 @token_required
 def kick_user(wg_id):
     """
@@ -261,7 +261,7 @@ def kick_user(wg_id):
     return jsonify({'message': 'User kicked successfully'}), 200
 
 
-@wg_bp.route('/wg/<int:wg_id>/admin', methods=['POST'])
+@wg_bp.route('/wg/<string:wg_id>/admin', methods=['POST'])
 @token_required
 def toggle_user_admin(wg_id):
     """
@@ -356,7 +356,7 @@ def get_my_wgs():
     return jsonify(serialized_wgs), 200
 
 
-@wg_bp.route('/wg/<int:wg_id>', methods=['GET'])
+@wg_bp.route('/wg/<string:wg_id>', methods=['GET'])
 @token_required
 def get_wg_info(wg_id):
     """
@@ -403,7 +403,7 @@ def get_wg_info(wg_id):
     return jsonify(serialize_wg(wg)), 200
 
 
-@wg_bp.route('/wg/<int:wg_id>', methods=['PUT'])
+@wg_bp.route('/wg/<string:wg_id>', methods=['PUT'])
 @token_required
 def update_wg(wg_id):
     """
@@ -489,7 +489,7 @@ def update_wg(wg_id):
     return jsonify({'message': 'WG updated successfully'}), 200
 
 
-@wg_bp.route('/wg/<int:wg_id>/transfer_creator', methods=['POST'])
+@wg_bp.route('/wg/<string:wg_id>/transfer_creator', methods=['POST'])
 @token_required
 def transfer_creator(wg_id):
     """
@@ -565,7 +565,7 @@ def transfer_creator(wg_id):
 
     return jsonify({'message': 'Creator status transferred successfully'}), 200
 
-@wg_bp.route('/wg/<int:wg_id>/tasklists', methods=['GET'])
+@wg_bp.route('/wg/<string:wg_id>/tasklists', methods=['GET'])
 @token_required
 def get_tasklists_for_wg(wg_id):
     """
@@ -604,7 +604,7 @@ def get_tasklists_for_wg(wg_id):
                   } for tl in wg.tasklists]
     return jsonify({'tasklists': tasklists}), 200
 
-@wg_bp.route('/wg/<int:wg_id>/shoppinglists', methods=['GET'])
+@wg_bp.route('/wg/<string:wg_id>/shoppinglists', methods=['GET'])
 @token_required
 def get_shoppinglists_for_wg(wg_id):
     """
@@ -645,7 +645,7 @@ def get_shoppinglists_for_wg(wg_id):
     return jsonify({'shoppinglists': shoppinglists}), 200
 
 
-@wg_bp.route('/wg/<int:wg_id>/budgetplanning', methods=['GET'])
+@wg_bp.route('/wg/<string:wg_id>/budgetplanning', methods=['GET'])
 @token_required
 def get_budgetplannings_for_wg(wg_id):
     """

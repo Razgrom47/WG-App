@@ -65,7 +65,7 @@ def create_item():
     db.session.commit()
     return jsonify(serialize_item(new_item)), 201
 
-@item_bp.route('/item/<int:item_id>', methods=['PUT'])
+@item_bp.route('/item/<string:item_id>', methods=['PUT'])
 @token_required
 def update_item(item_id):
     """
@@ -117,7 +117,7 @@ def update_item(item_id):
     db.session.commit()
     return jsonify(serialize_item(item)), 200
 
-@item_bp.route('/item/<int:item_id>', methods=['DELETE'])
+@item_bp.route('/item/<string:item_id>', methods=['DELETE'])
 @token_required
 def delete_item(item_id):
     """
@@ -149,7 +149,7 @@ def delete_item(item_id):
     db.session.commit()
     return jsonify({'message': 'Item deleted successfully'}), 204
 
-@item_bp.route('/item/<int:item_id>/check', methods=['PUT'])
+@item_bp.route('/item/<string:item_id>/check', methods=['PUT'])
 @token_required
 def check_item(item_id):
     """

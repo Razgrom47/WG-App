@@ -1,61 +1,62 @@
 from extensions import db
 from datetime import datetime
+import uuid
 
 # Association tables for many-to-many relationships
 user_wg = db.Table(
     'user_wg',
-    db.Column('user_id', db.Integer, db.ForeignKey('USERS.idUser')),
-    db.Column('wg_id', db.Integer, db.ForeignKey('WG.idWG'))
+    db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
+    db.Column('wg_id', db.String(36), db.ForeignKey('WG.idWG'))
 )
 
 admin_wg = db.Table(
     'admin_wg',
-    db.Column('user_id', db.Integer, db.ForeignKey('USERS.idUser')),
-    db.Column('wg_id', db.Integer, db.ForeignKey('WG.idWG'))
+    db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
+    db.Column('wg_id', db.String(36), db.ForeignKey('WG.idWG'))
 )
 
 user_tasklist = db.Table(
     'user_tasklist',
-    db.Column('user_id', db.Integer, db.ForeignKey('USERS.idUser')),
-    db.Column('tasklist_id', db.Integer, db.ForeignKey('TASKLIST.idTaskList'))
+    db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
+    db.Column('tasklist_id', db.String(36), db.ForeignKey('TASKLIST.idTaskList'))
 )
 
 user_task = db.Table(
     'user_task',
-    db.Column('user_id', db.Integer, db.ForeignKey('USERS.idUser')),
-    db.Column('task_id', db.Integer, db.ForeignKey('TASK.idTask'))
+    db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
+    db.Column('task_id', db.String(36), db.ForeignKey('TASK.idTask'))
 )
 
 user_shoppinglist = db.Table(
     'user_shoppinglist',
-    db.Column('user_id', db.Integer, db.ForeignKey('USERS.idUser')),
-    db.Column('shoppinglist_id', db.Integer,
+    db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
+    db.Column('shoppinglist_id', db.String(36),
               db.ForeignKey('SHOPPINGLIST.idShoppingList'))
 )
 
 user_item = db.Table(
     'user_item',
-    db.Column('user_id', db.Integer, db.ForeignKey('USERS.idUser')),
-    db.Column('item_id', db.Integer, db.ForeignKey('ITEM.idItem'))
+    db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
+    db.Column('item_id', db.String(36), db.ForeignKey('ITEM.idItem'))
 )
 
 user_budgetplanning = db.Table(
     'user_budgetplanning',
-    db.Column('user_id', db.Integer, db.ForeignKey('USERS.idUser')),
-    db.Column('budgetplanning_id', db.Integer,
+    db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
+    db.Column('budgetplanning_id', db.String(36),
               db.ForeignKey('BUDGETPLANNING.idBudgetPlanning'))
 )
 
 user_cost = db.Table(
     'user_cost',
-    db.Column('user_id', db.Integer, db.ForeignKey('USERS.idUser')),
-    db.Column('cost_id', db.Integer, db.ForeignKey('COST.idCost'))
+    db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
+    db.Column('cost_id', db.String(36), db.ForeignKey('COST.idCost'))
 )
 
 
 class User(db.Model):
     __tablename__ = 'USERS'
-    idUser = db.Column(db.Integer, primary_key=True)
+    idUser = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     strUser = db.Column(db.String(80), nullable=False)
     strPassword = db.Column(db.String(128), nullable=False)
     strEmail = db.Column(db.String(128), nullable=False)
@@ -83,7 +84,7 @@ class User(db.Model):
 
 class WG(db.Model):
     __tablename__ = 'WG'
-    idWG = db.Column(db.Integer, primary_key=True)
+    idWG = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = db.Column(db.String(120), nullable=False)
     address = db.Column(db.String(255), nullable=False)
     etage = db.Column(db.String(20), nullable=False)
@@ -109,7 +110,7 @@ class WG(db.Model):
 
 class TaskList(db.Model):
     __tablename__ = 'TASKLIST'
-    idTaskList = db.Column(db.Integer, primary_key=True)
+    idTaskList = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.utcnow)
@@ -126,7 +127,7 @@ class TaskList(db.Model):
 
 class Task(db.Model):
     __tablename__ = 'TASK'
-    idTask = db.Column(db.Integer, primary_key=True)
+    idTask = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     start_date = db.Column(db.DateTime)
@@ -142,7 +143,7 @@ class Task(db.Model):
 
 class ShoppingList(db.Model):
     __tablename__ = 'SHOPPINGLIST'
-    idShoppingList = db.Column(db.Integer, primary_key=True)
+    idShoppingList = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.utcnow)
@@ -159,7 +160,7 @@ class ShoppingList(db.Model):
 
 class Item(db.Model):
     __tablename__ = 'ITEM'
-    idItem = db.Column(db.Integer, primary_key=True)
+    idItem = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     is_checked = db.Column(db.Boolean, default=False)
@@ -173,7 +174,7 @@ class Item(db.Model):
 
 class BudgetPlanning(db.Model):
     __tablename__ = 'BUDGETPLANNING'
-    idBudgetPlanning = db.Column(db.Integer, primary_key=True)
+    idBudgetPlanning = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     created_date = db.Column(db.DateTime, default=datetime.utcnow)
@@ -191,7 +192,7 @@ class BudgetPlanning(db.Model):
 
 class Cost(db.Model):
     __tablename__ = 'COST'
-    idCost = db.Column(db.Integer, primary_key=True)
+    idCost = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     goal = db.Column(db.Float)
