@@ -46,14 +46,14 @@ const HomePage = () => {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-4 sm:p-6">
       <div className="flex justify-between items-center mb-6">
       <h1 className="text-3xl font-bold">Welcome, {user?.username}! 👋</h1>
-        <div className="flex space-x-2">
+        {/* <div className="flex space-x-2">
           <Link to="/profile" className="px-4 py-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors">
             Profile
           </Link>
           <button onClick={logout} className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors">
             Logout
           </button>
-        </div>
+        </div> */}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

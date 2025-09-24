@@ -179,15 +179,17 @@ const WGPage = () => {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-4 sm:p-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-center text-indigo-500 hover:text-indigo-600 transition-colors mb-4"
-        >
-          <FaArrowLeft className="mr-2" />
-          Back to Home
-        </button>
-        <h1 className="text-3xl font-bold mb-2">{wg.title}</h1>
+        <div className="flex items-center justify-between mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
+          <h1 className="text-3xl font-bold mb-2">{wg.title}</h1>
+          {/* Back Button */}
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center text-indigo-500 hover:text-indigo-600 transition-colors mb-4"
+          >
+            <FaArrowLeft className="mr-2" />
+            Back to Home
+          </button>
+          </div>
         <span className="text-sm text-gray-500 dark:text-gray-400">
           {wg.is_public ? 'Public' : 'Private'}
         </span>
