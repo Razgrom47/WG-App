@@ -10,7 +10,7 @@ const WGManagement = ({ onCreated }) => {
     e.preventDefault();
     try {
       const res = await wg_api.createWG(form); // New: Use wg_api to create a WG
-      onCreated(res.data);
+      onCreated(res.data); // res.data now contains the full WG object with ID
       setForm({ title: "", address: "", etage: "", description: "" });
     } catch (err) {
       alert("Error: " + (err.response?.data?.message || "Failed to create shared apartment"));

@@ -16,6 +16,7 @@ import {
   FaPlus,
   FaTimes,
   FaUserPlus,
+  FaCog, // Added FaCog for the settings icon
 } from "react-icons/fa";
 
 const WGPage = () => {
@@ -179,17 +180,30 @@ const WGPage = () => {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-4 sm:p-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-        <div className="flex items-center justify-between mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
-          <h1 className="text-3xl font-bold mb-2">{wg.title}</h1>
+        <div className="flex items-start justify-between mb-4 border-b border-gray-200 dark:border-gray-700 pb-4">
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold mb-2">{wg.title}</h1>
+            {/* Conditional "Manage WG" icon placed here */}
+            {isCurrentUserAdmin && (
+              <Link
+                to={`/wg/${id}/manage`}
+                aria-label="Manage WG Settings"
+                className="inline-flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <FaCog className="text-2xl mr-2" />
+                <span className="text-sm font-medium">Settings</span>
+              </Link>
+            )}
+          </div>
           {/* Back Button */}
           <button
             onClick={() => navigate("/")}
-            className="flex items-center text-indigo-500 hover:text-indigo-600 transition-colors mb-4"
+            className="flex items-center text-indigo-500 hover:text-indigo-600 transition-colors ml-4"
           >
             <FaArrowLeft className="mr-2" />
             Back to Home
           </button>
-          </div>
+        </div>
         <span className="text-sm text-gray-500 dark:text-gray-400">
           {wg.is_public ? 'Public' : 'Private'}
         </span>
@@ -203,46 +217,30 @@ const WGPage = () => {
           Street & Nr.: {wg.address} - Etage: {wg.etage}
         </p>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-4 mt-6 border-t pt-4 border-gray-200 dark:border-gray-700 sm:grid-cols-4">
-          {isCurrentUserAdmin ? (
-            <Link
-              to={`/wg/${id}/manage`}
-              className="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors aspect-square text-sm sm:text-base"
-            >
-              <FaUsers className="text-2xl sm:text-3xl" />
-              <span className="mt-2 text-center">Manage WG</span>
-            </Link>
-          ) : (
-            <button
-              disabled
-              className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-400 text-gray-700 cursor-not-allowed aspect-square text-sm sm:text-base"
-            >
-              <FaUsers className="text-2xl sm:text-3xl" />
-              <span className="mt-2 text-center">Manage WG</span>
-            </button>
-          )}
-
+        {/* Action Buttons - Removed Manage WG button */}
+        <div className="grid grid-cols-3 gap-3 mt-6 border-t pt-4 border-gray-200 dark:border-gray-700">
           <Link
             to={`/wg/${id}/budget_plans`}
-            className="flex flex-col items-center justify-center p-4 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors aspect-square text-sm sm:text-base"
+            // Reduced padding and used text-xs for smaller mobile text, then scaled up with md:p-4 and md:text-sm
+            className="flex flex-col items-center justify-center p-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors aspect-square text-xs md:text-sm md:p-4"
           >
-            <FaMoneyBillWave className="text-2xl sm:text-3xl" />
-            <span className="mt-2 text-center">Budget Plans</span>
+            {/* Scaled icons: base text-xl (20px) which is relatively small, md:text-2xl (24px) for desktop */}
+            <FaMoneyBillWave className="text-xl md:text-2xl" />
+            <span className="mt-1 text-center font-medium">Budget Plans</span>
           </Link>
           <Link
             to={`/wg/${id}/task_lists`}
-            className="flex flex-col items-center justify-center p-4 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition-colors aspect-square text-sm sm:text-base"
+            className="flex flex-col items-center justify-center p-2 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition-colors aspect-square text-xs md:text-sm md:p-4"
           >
-            <FaTasks className="text-2xl sm:text-3xl" />
-            <span className="mt-2 text-center">Task Lists</span>
+            <FaTasks className="text-xl md:text-2xl" />
+            <span className="mt-1 text-center font-medium">Task Lists</span>
           </Link>
           <Link
             to={`/wg/${id}/shopping_lists`}
-            className="flex flex-col items-center justify-center p-4 rounded-lg bg-purple-500 text-white hover:bg-purple-600 transition-colors aspect-square text-sm sm:text-base"
+            className="flex flex-col items-center justify-center p-2 rounded-lg bg-purple-500 text-white hover:bg-purple-600 transition-colors aspect-square text-xs md:text-sm md:p-4"
           >
-            <FaShoppingCart className="text-2xl sm:text-3xl" />
-            <span className="mt-2 text-center">Shopping Lists</span>
+            <FaShoppingCart className="text-xl md:text-2xl" />
+            <span className="mt-1 text-center font-medium">Shopping Lists</span>
           </Link>
         </div>
 

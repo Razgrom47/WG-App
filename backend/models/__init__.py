@@ -3,54 +3,55 @@ from datetime import datetime
 import uuid
 
 # Association tables for many-to-many relationships
+# Added ondelete='CASCADE' to feature-side foreign keys to ensure cleanup when WG or feature is deleted
 user_wg = db.Table(
     'user_wg',
     db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
-    db.Column('wg_id', db.String(36), db.ForeignKey('WG.idWG'))
+    db.Column('wg_id', db.String(36), db.ForeignKey('WG.idWG', ondelete='CASCADE'))
 )
 
 admin_wg = db.Table(
     'admin_wg',
     db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
-    db.Column('wg_id', db.String(36), db.ForeignKey('WG.idWG'))
+    db.Column('wg_id', db.String(36), db.ForeignKey('WG.idWG', ondelete='CASCADE'))
 )
 
 user_tasklist = db.Table(
     'user_tasklist',
     db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
-    db.Column('tasklist_id', db.String(36), db.ForeignKey('TASKLIST.idTaskList'))
+    db.Column('tasklist_id', db.String(36), db.ForeignKey('TASKLIST.idTaskList', ondelete='CASCADE'))
 )
 
 user_task = db.Table(
     'user_task',
     db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
-    db.Column('task_id', db.String(36), db.ForeignKey('TASK.idTask'))
+    db.Column('task_id', db.String(36), db.ForeignKey('TASK.idTask', ondelete='CASCADE'))
 )
 
 user_shoppinglist = db.Table(
     'user_shoppinglist',
     db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
     db.Column('shoppinglist_id', db.String(36),
-              db.ForeignKey('SHOPPINGLIST.idShoppingList'))
+              db.ForeignKey('SHOPPINGLIST.idShoppingList', ondelete='CASCADE'))
 )
 
 user_item = db.Table(
     'user_item',
     db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
-    db.Column('item_id', db.String(36), db.ForeignKey('ITEM.idItem'))
+    db.Column('item_id', db.String(36), db.ForeignKey('ITEM.idItem', ondelete='CASCADE'))
 )
 
 user_budgetplanning = db.Table(
     'user_budgetplanning',
     db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
     db.Column('budgetplanning_id', db.String(36),
-              db.ForeignKey('BUDGETPLANNING.idBudgetPlanning'))
+              db.ForeignKey('BUDGETPLANNING.idBudgetPlanning', ondelete='CASCADE'))
 )
 
 user_cost = db.Table(
     'user_cost',
     db.Column('user_id', db.String(36), db.ForeignKey('USERS.idUser')),
-    db.Column('cost_id', db.String(36), db.ForeignKey('COST.idCost'))
+    db.Column('cost_id', db.String(36), db.ForeignKey('COST.idCost', ondelete='CASCADE'))
 )
 
 
@@ -61,21 +62,25 @@ class User(db.Model):
     strPassword = db.Column(db.String(128), nullable=False)
     strEmail = db.Column(db.String(128), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    wgs = db.relationship('WG', secondary=user_wg, back_populates='users')
+    strHomePage = db.Column(db.String(255), nullable=False, default='/') 
+    
+    # Added passive_deletes=True to all many-to-many relationships
+    # This tells SQLAlchemy that the DB is handling the cleanup via CASCADE
+    wgs = db.relationship('WG', secondary=user_wg, back_populates='users', passive_deletes=True)
     admin_wgs = db.relationship(
-        'WG', secondary=admin_wg, back_populates='admins')
+        'WG', secondary=admin_wg, back_populates='admins', passive_deletes=True)
     tasklists = db.relationship(
-        'TaskList', secondary=user_tasklist, back_populates='users')
+        'TaskList', secondary=user_tasklist, back_populates='users', passive_deletes=True)
     tasks = db.relationship('Task', secondary=user_task,
-                            back_populates='users')
+                            back_populates='users', passive_deletes=True)
     shoppinglists = db.relationship(
-        'ShoppingList', secondary=user_shoppinglist, back_populates='users')
+        'ShoppingList', secondary=user_shoppinglist, back_populates='users', passive_deletes=True)
     items = db.relationship('Item', secondary=user_item,
-                            back_populates='users')
+                            back_populates='users', passive_deletes=True)
     budgetplannings = db.relationship(
-        'BudgetPlanning', secondary=user_budgetplanning, back_populates='users')
+        'BudgetPlanning', secondary=user_budgetplanning, back_populates='users', passive_deletes=True)
     costs = db.relationship('Cost', secondary=user_cost,
-                            back_populates='users')
+                            back_populates='users', passive_deletes=True)
     __table_args__ = (
         db.UniqueConstraint('strUser', name='uq_user_strUser'),
         db.UniqueConstraint('strEmail', name='uq_user_strEmail'),
@@ -90,9 +95,13 @@ class WG(db.Model):
     etage = db.Column(db.String(20), nullable=False)
     description = db.Column(db.Text)
     is_public = db.Column(db.Boolean, default=True)
-    creator_id = db.Column(db.Integer, db.ForeignKey(
-        'USERS.idUser', name='fk_wg_creator'), nullable=False)
-    creator = db.relationship('User', foreign_keys=[creator_id])
+    
+    # Added ondelete='CASCADE' to the Foreign Key and backref cascade to trigger WG deletion on User (creator) deletion
+    creator_id = db.Column(db.String(36), db.ForeignKey(
+        'USERS.idUser', name='fk_wg_creator', ondelete='CASCADE'), nullable=False)
+    creator = db.relationship('User', foreign_keys=[creator_id], backref=db.backref('created_wgs', cascade='all, delete-orphan'))
+    
+    # Cascade is already set up on these relationships for WG deletion (Requirement 2)
     users = db.relationship('User', secondary=user_wg, back_populates='wgs')
     admins = db.relationship('User', secondary=admin_wg,
                              back_populates='admin_wgs')
@@ -115,7 +124,7 @@ class TaskList(db.Model):
     description = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     is_checked = db.Column(db.Boolean, default=False)
-    wg_id = db.Column(db.Integer, db.ForeignKey('WG.idWG'))
+    wg_id = db.Column(db.String(36), db.ForeignKey('WG.idWG'))
     wg = db.relationship('WG', back_populates='tasklists')
     users = db.relationship(
         'User', secondary=user_tasklist, back_populates='tasklists'
@@ -134,7 +143,7 @@ class Task(db.Model):
     end_date = db.Column(db.DateTime)
     is_done = db.Column(db.Boolean, default=False)
     is_template = db.Column(db.Boolean, default=False)
-    tasklist_id = db.Column(db.Integer, db.ForeignKey('TASKLIST.idTaskList'))
+    tasklist_id = db.Column(db.String(36), db.ForeignKey('TASKLIST.idTaskList'))
     tasklist = db.relationship('TaskList', back_populates='tasks')
     users = db.relationship(
         'User', secondary=user_task, back_populates='tasks'
@@ -148,9 +157,9 @@ class ShoppingList(db.Model):
     description = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     is_checked = db.Column(db.Boolean, default=False)
-    creator_id = db.Column(db.Integer, db.ForeignKey('USERS.idUser'))
+    creator_id = db.Column(db.String(36), db.ForeignKey('USERS.idUser'))
     creator = db.relationship('User', foreign_keys=[creator_id])
-    wg_id = db.Column(db.Integer, db.ForeignKey('WG.idWG'))
+    wg_id = db.Column(db.String(36), db.ForeignKey('WG.idWG'))
     wg = db.relationship('WG', back_populates='shoppinglists')
     users = db.relationship(
         'User', secondary=user_shoppinglist, back_populates='shoppinglists')
@@ -165,7 +174,7 @@ class Item(db.Model):
     description = db.Column(db.Text)
     is_checked = db.Column(db.Boolean, default=False)
     shoppinglist_id = db.Column(
-        db.Integer, db.ForeignKey('SHOPPINGLIST.idShoppingList'))
+        db.String(36), db.ForeignKey('SHOPPINGLIST.idShoppingList'))
     shoppinglist = db.relationship('ShoppingList', back_populates='items')
     users = db.relationship(
         'User', secondary=user_item, back_populates='items'
@@ -180,9 +189,9 @@ class BudgetPlanning(db.Model):
     created_date = db.Column(db.DateTime, default=datetime.utcnow)
     goal = db.Column(db.Float)
     deadline = db.Column(db.DateTime)
-    creator_id = db.Column(db.Integer, db.ForeignKey('USERS.idUser'))
+    creator_id = db.Column(db.String(36), db.ForeignKey('USERS.idUser'))
     creator = db.relationship('User', foreign_keys=[creator_id])
-    wg_id = db.Column(db.Integer, db.ForeignKey('WG.idWG'))
+    wg_id = db.Column(db.String(36), db.ForeignKey('WG.idWG'))
     wg = db.relationship('WG', back_populates='budgetplannings')
     users = db.relationship(
         'User', secondary=user_budgetplanning, back_populates='budgetplannings')
@@ -198,7 +207,7 @@ class Cost(db.Model):
     goal = db.Column(db.Float)
     paid = db.Column(db.Float, default=0.0)
     budgetplanning_id = db.Column(
-        db.Integer, db.ForeignKey('BUDGETPLANNING.idBudgetPlanning'))
+        db.String(36), db.ForeignKey('BUDGETPLANNING.idBudgetPlanning'))
     budgetplanning = db.relationship('BudgetPlanning', back_populates='costs')
     users = db.relationship('User', secondary=user_cost,
                             back_populates='costs')

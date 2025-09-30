@@ -10,20 +10,22 @@ const HomePage = () => {
   const [wgs, setWgs] = useState([]);
   const [joinWgId, setJoinWgId] = useState("");
 
+  const fetchWGs = async () => {
+    try {
+      const res = await wg_api.getWGs();
+      setWgs(res.data);
+    } catch (err) {
+      console.error("Failed to fetch WGs:", err);
+    }
+  };
+
   useEffect(() => {
-    const fetchWGs = async () => {
-      try {
-        const res = await wg_api.getWGs();
-        setWgs(res.data);
-      } catch (err) {
-        console.error("Failed to fetch WGs:", err);
-      }
-    };
     fetchWGs();
   }, []);
 
-  const handleWGCreate = (newWG) => {
-    setWgs([...wgs, newWG]);
+  const handleWGCreate = async (newWG) => {
+    // setWgs([...wgs, newWG]);
+    await fetchWGs();
   };
 
   const handleJoinWG = async (e) => {
@@ -33,8 +35,7 @@ const HomePage = () => {
         await wg_api.joinWG(joinWgId);
         alert("You have successfully joined the WG!");
         setJoinWgId("");
-        const res = await wg_api.getWGs();
-        setWgs(res.data);
+        await fetchWGs(); 
       }
     } catch (err) {
       alert("Error: " + (err.response?.data?.message || "Failed to join shared apartment"));

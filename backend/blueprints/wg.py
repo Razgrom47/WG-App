@@ -37,7 +37,7 @@ def serialize_wg(wg):
 @token_required
 def create_wg():
     """
-    Create a new WG
+    Create a new WG (Wohngemeinschaft) and set the creator's home page.
     ---
     tags:
       - WG
@@ -66,6 +66,8 @@ def create_wg():
               description:
                 type: string
                 example: A nice shared apartment
+              is_public:
+                type: boolean
     responses:
       201:
         description: WG created successfully
@@ -103,13 +105,19 @@ def create_wg():
     new_wg.users.append(creator)
     new_wg.admins.append(creator)
     db.session.add(new_wg)
-    db.session.commit()
-    return jsonify({'title': new_wg.title,
-                    'address': new_wg.address,
-                    'etage': new_wg.etage,
-                    'description': new_wg.description,
-                    'creator': {'id': new_wg.creator.idUser, 'name': new_wg.creator.strUser}, }), 201
+    
+    try:
+        db.session.flush() # Flush to get the ID for the new WG
+        
+        # NEW: Set the creator's home page to the new WG
+        creator.strHomePage = f'/wg/{new_wg.idWG}'
 
+        db.session.commit()
+        serialized_wg = serialize_wg(new_wg)
+        return jsonify(serialized_wg), 201 
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': f'Error creating WG: {str(e)}'}), 500
 
 @wg_bp.route('/wg/<string:wg_id>', methods=['DELETE'])
 @token_required
@@ -142,6 +150,8 @@ def delete_wg(wg_id):
     # Only creator or admin can delete
     if g.current_user not in wg.admins and g.current_user != wg.creator:
         return jsonify({'message': 'Not authorized'}), 403
+    if g.current_user.strHomePage == f'/wg/{wg.idWG}':
+        g.current_user.strHomePage = "/"
     db.session.delete(wg)
     db.session.commit()
     return jsonify({'message': 'WG deleted successfully'}), 204
@@ -257,6 +267,8 @@ def kick_user(wg_id):
     wg.users.remove(user)
     if user in wg.admins:
         wg.admins.remove(user)
+    if user.strHomePage == f'/wg/{wg_id}':
+        user.strHomePage = '/'
     db.session.commit()
     return jsonify({'message': 'User kicked successfully'}), 200
 

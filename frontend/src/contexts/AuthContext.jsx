@@ -16,10 +16,10 @@ export const AuthProvider = ({ children }) => {
   // Function to handle profile updates and new token from the backend
   const updateUser = async (formData) => {
     try {
+      // NOTE: The backend logic in user.py now returns the updated user object
       const res = await api.put("/user", formData);
-      if (res.data?.token && res.data?.user) {
-        localStorage.setItem("token", res.data.token);
-        setToken(res.data.token);
+      // The backend no longer returns a token on profile update, only the user object
+      if (res.data?.user) {
         setUser(res.data.user);
         return true;
       }
@@ -39,6 +39,12 @@ export const AuthProvider = ({ children }) => {
           if (res.data?.user) {
             setToken(storedToken);
             setUser(res.data.user);
+            // NEW: Redirect to user's strHomePage on initial load
+            const homePath = res.data.user.strHomePage || "/"; // Default to root if not set
+            // Check if we're on a non-auth page before redirecting
+            if (window.location.pathname === '/login' || window.location.pathname === '/register' || window.location.pathname === '/splash') {
+                 navigate(homePath, { replace: true });
+            }
           } else {
             localStorage.removeItem("token");
             setToken(null);
@@ -72,6 +78,9 @@ export const AuthProvider = ({ children }) => {
         const userRes = await api.get(`/user`);
         if (userRes.data?.user) {
           setUser(userRes.data.user);
+          // NEW: Redirect to user's strHomePage after successful login
+          const homePath = userRes.data.user.strHomePage || "/"; // Default to root if not set
+          navigate(homePath, { replace: true }); // Use replace to prevent back button from going to login
           return true;
         }
       }
@@ -110,19 +119,32 @@ export const AuthProvider = ({ children }) => {
       navigate("/login");
     }
   };
+  
+  const deleteAccount = async () => {
+    try {
+      await api.delete('/user');
+      logout();
+      return true;
+    } catch (err) {
+      console.error("Account deletion failed", err);
+      return false;
+    }
+  }
 
-  const value = {
-    user,
-    token,
-    loading,
-    login,
-    logout,
-    register,
-    updateUser,
-  };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        token,
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        updateUser,
+        deleteAccount
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

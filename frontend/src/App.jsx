@@ -56,31 +56,9 @@ function App() {
       <Route path="/splash" element={<LoadingScreen />} />
 
       {/* Protected Routes */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <HomePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/wg/:id"
-        element={
-          <ProtectedRoute>
-            <WGPage />
-          </ProtectedRoute>
-        }
-      />
-      {/* New Protected Routes for WG Management Sections */}
+      <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>}/>
+      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>}/>
+      <Route path="/wg/:id" element={<ProtectedRoute><WGPage /></ProtectedRoute>}/>
       <Route path="/wg/:id/manage" element={<ProtectedRoute><WGUpdate /></ProtectedRoute>} />
       <Route path="/wg/:id/task_lists" element={<ProtectedRoute>  <TaskListPage /> </ProtectedRoute>} />
       <Route path="/tasklist/:id" element={<ProtectedRoute><TaskListDetailPage /></ProtectedRoute>} />

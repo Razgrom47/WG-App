@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
+
 const AuthPage = ({ mode }) => {
   const navigate = useNavigate();
   const { login, register } = useAuth();
@@ -51,16 +52,14 @@ const AuthPage = ({ mode }) => {
 
     if (result === true) {
       if (mode === "login") {
-        navigate("/home");
+        // NEW: Redirection to strHomePage is now handled by the login function in AuthContext.jsx
       } else {
         navigate("/login");
       }
     } else if (typeof result === 'string') {
-      // Handle backend error messages
       setError(result);
     } else {
-      // Generic failure message for an unknown error
-      setError("An unexpected error occurred. Please try again.");
+      setError(mode === "login" ? "Login failed. Check your credentials." : "Registration failed. Try again.");
     }
     
     setIsSubmitting(false);
@@ -84,6 +83,7 @@ const AuthPage = ({ mode }) => {
                 onChange={(e) => setUsername(e.target.value)}
                 className="px-4 py-2 rounded-lg border-2 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 required
+                autoComplete="username"
               />
               <input
                 type="email"
@@ -91,8 +91,8 @@ const AuthPage = ({ mode }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="px-4 py-2 rounded-lg border-2 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                autoComplete="email"
                 required
+                autoComplete="email"
               />
             </>
           )}
@@ -104,6 +104,7 @@ const AuthPage = ({ mode }) => {
               onChange={(e) => setIdentifier(e.target.value)}
               className="px-4 py-2 rounded-lg border-2 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               required
+              autoComplete="username"
             />
           )}
           <input
@@ -137,9 +138,9 @@ const AuthPage = ({ mode }) => {
 
         <div className="mt-4 text-center">
           {mode === "login" ? (
-            <p>Don't have an account? <Link to="/register" className="text-blue-500 hover:underline">Register</Link></p>
+            <p>Don't have an account? <Link to="/register" className="text-blue-500 hover:text-blue-400 font-medium transition duration-300">Register</Link></p>
           ) : (
-            <p>Already have an account? <Link to="/login" className="text-blue-500 hover:underline">Login</Link></p>
+            <p>Already have an account? <Link to="/login" className="text-blue-500 hover:text-blue-400 font-medium transition duration-300">Login</Link></p>
           )}
         </div>
       </div>

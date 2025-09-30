@@ -48,7 +48,7 @@ const LogoutIcon = () => (
 );
 
 const Navbar = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
@@ -59,8 +59,9 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
   };
+
+  const homePath = user?.strHomePage || "/"; 
 
   return (
     <nav className="fixed top-0 w-full bg-white dark:bg-gray-800 shadow-lg z-50">
@@ -75,7 +76,7 @@ const Navbar = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link to="/" className="flex items-center text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+            <Link to={homePath} className="flex items-center text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               <HomeIcon /> Home
             </Link>
             <Link to="/profile" className="flex items-center text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
@@ -114,7 +115,7 @@ const Navbar = () => {
         <div className="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
           <div className="px-2 pt-2 pb-3 space-y-1">
             <Link 
-              to="/" 
+              to={homePath} 
               onClick={toggleMenu} 
               className="flex items-center px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-md transition-colors"
             >
