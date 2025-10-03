@@ -30,7 +30,7 @@ services:
       context: ./frontend
       target: production  # Nginx stage
     ports:
-      - "80:80"  # Nur Frontend ist extern verfügbar
+      - "80:80"  # Only frontend is externally available
     depends_on:
       - web
     restart: unless-stopped
