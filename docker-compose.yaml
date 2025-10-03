@@ -15,7 +15,7 @@ services:
 
   web:
     build: ./backend
-    # Port nur intern verfügbar (kein externes Mapping)
+    # Port only available internally (no external mapping)
     expose:
       - "7700"
     depends_on:
