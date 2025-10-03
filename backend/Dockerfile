@@ -35,5 +35,5 @@ EXPOSE 7700
 
 ENV FLASK_APP=app.py
 
-# Verwenden Sie gunicorn für Production
+# Use gunicorn for production
 CMD ["gunicorn", "--bind", "0.0.0.0:7700", "app:create_app()"]
