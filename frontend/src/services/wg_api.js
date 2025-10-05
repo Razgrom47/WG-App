@@ -22,7 +22,7 @@ const wg_api = {
   kickUser: (wgId, userId) => api.post(`/wg/${wgId}/kick`, { user_id: userId }),
 
   // Leave a WG
-  leaveWG: (wgId) => api.post(`/user/leave/${wgId}`),
+  leaveWG: (wgId) => api.post(`/user/leave_wg/${wgId}`),
 
   // Join WG
   joinWG: (wgId) => api.post(`/user/join/${wgId}`),

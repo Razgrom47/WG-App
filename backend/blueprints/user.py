@@ -61,7 +61,10 @@ def update_user():
             
     responses:
       200:
-        description: User updated successfully
+        description: User updated successfully, new JWT token returned if username or email changed.
+        content:
+          application/json:
+            example: {"message": "User updated successfully", "token": "...", "user": {...}}
       400:
         description: Invalid request data
     """
@@ -70,14 +73,17 @@ def update_user():
     
     if not user:
         return jsonify({'message': 'User not found'}), 404
-
+    # Track if a token refresh is needed
+    token_refresh_needed = False    
     # Update username if provided and different
     if 'username' in data and data['username'] != user.strUser:
         user.strUser = data['username']
+        token_refresh_needed = True # Flag set for username change
 
     # Update email if provided and different
     if 'email' in data and data['email'] != user.strEmail:
         user.strEmail = data['email']
+        token_refresh_needed = True # Flag set for email change
 
     # Handle new password
     if 'new_password' in data and data['new_password']:
@@ -99,10 +105,34 @@ def update_user():
                 # Fallback if WG is not found or user is not a member
                 user.strHomePage = '/'
 
+    # NEW: Generate a new token if username or email was changed
+    new_token = None
+    if token_refresh_needed:
+        # Re-use the JWT creation logic from auth.py's login route
+        new_token = jwt.encode({
+            "user_id": str(user.idUser),
+            "username": user.strUser,
+            "email": user.strEmail,
+            "exp": datetime.utcnow() + timedelta(minutes=10) # Set a new expiration
+        }, current_app.config["SECRET_KEY"], algorithm="HS256")
+
+
     try:
         db.session.commit()
-        # Return the updated user data including the new strHomePage
-        return jsonify({'message': 'User updated successfully', 'user': {'id': user.idUser, 'email': user.strEmail, 'username': user.strUser, 'strHomePage': user.strHomePage}}), 200
+        
+        response_data = {
+            'message': 'User updated successfully', 
+            'user': {
+                'id': user.idUser, 
+                'email': user.strEmail, 
+                'username': user.strUser, 
+                'strHomePage': user.strHomePage
+            }
+        }
+        if new_token:
+            response_data['token'] = new_token
+        
+        return jsonify(response_data), 200
     except IntegrityError:
         db.session.rollback()
         return jsonify({'message': 'Email or username already in use'}), 400

@@ -13,6 +13,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { MdOutlineCheckBoxOutlineBlank, MdOutlineCheckBox } from "react-icons/md";
+import { useAlert } from "../contexts/AlertContext"; 
 
 const ShoppingListDetailPage = () => {
   const { id } = useParams();
@@ -26,6 +27,7 @@ const ShoppingListDetailPage = () => {
   const [menuDirection, setMenuDirection] = useState({});
   const menuRefs = useRef({});
 
+  const { showAlert, confirm } = useAlert(); 
   // State for Create Item Modal
   const [createItemModalOpen, setCreateItemModalOpen] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState("");
@@ -64,8 +66,7 @@ const ShoppingListDetailPage = () => {
       await fetchShoppingListAndWG();
       setOpenMenuId(null);
     } catch (err) {
-      console.error("Failed to toggle item check status:", err);
-      alert("Failed to toggle item check status. Please try again.");
+      showAlert("Failed to toggle item check status. Please try again.", "error");
     }
   };
 
@@ -79,7 +80,7 @@ const ShoppingListDetailPage = () => {
 
   const handleSaveEditItem = async () => {
     if (!editedTitle) {
-      alert("Please enter a title for the item.");
+      showAlert("Please enter a title for the item.", "warning");
       return;
     }
     const updatedData = {
@@ -94,22 +95,23 @@ const ShoppingListDetailPage = () => {
       setEditedTitle("");
       setEditedDescription("");
     } catch (err) {
-      console.error("Failed to update item:", err);
-      alert("Failed to update item. Please try again.");
+      showAlert("Failed to update item. Please try again.", "error");
     }
   };
 
   const handleDeleteItem = async (itemId) => {
-    if (
-      window.confirm("Are you sure you want to delete this item?")
-    ) {
+    const confirmed = await confirm({
+        title: "Delete Item",
+        message: "Are you sure you want to delete this item? This action cannot be undone.",
+    });
+
+    if (confirmed) {
       try {
         await item_api.deleteItem(itemId);
         await fetchShoppingListAndWG();
         setOpenMenuId(null);
       } catch (err) {
-        console.error("Failed to delete item:", err);
-        alert("Failed to delete item. Please try again.");
+        showAlert("Failed to delete item. Please try again.", "error");
       }
     }
   };
@@ -120,7 +122,7 @@ const ShoppingListDetailPage = () => {
 
   const handleSaveNewItem = async () => {
     if (!newItemTitle) {
-      alert("Please enter a title for the new item.");
+      showAlert("Please enter a title for the new item.", "warning");
       return;
     }
     const itemData = {
@@ -134,8 +136,7 @@ const ShoppingListDetailPage = () => {
       setNewItemTitle("");
       setNewItemDescription("");
     } catch (err) {
-      console.error("Failed to create item:", err);
-      alert("Failed to create item. Please try again.");
+      showAlert("Failed to create item. Please try again.", "error");
     }
   };
 

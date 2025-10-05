@@ -4,9 +4,11 @@ import { Link } from "react-router-dom";
 import WGManagement from "../components/WGManagement";
 import wg_api from "../services/wg_api";
 import { FaSignOutAlt, FaPlus, FaDoorOpen } from "react-icons/fa";
+import { useAlert } from "../contexts/AlertContext"; 
 
 const HomePage = () => {
   const { user, logout } = useAuth();
+  const { showAlert } = useAlert(); 
   const [wgs, setWgs] = useState([]);
   const [joinWgId, setJoinWgId] = useState("");
 
@@ -33,13 +35,12 @@ const HomePage = () => {
     try {
       if (joinWgId) {
         await wg_api.joinWG(joinWgId);
-        alert("You have successfully joined the WG!");
+        showAlert("You have successfully joined the WG!", "success");
         setJoinWgId("");
         await fetchWGs(); 
       }
     } catch (err) {
-      alert("Error: " + (err.response?.data?.message || "Failed to join shared apartment"));
-      console.error(err);
+      showAlert((err.response?.data?.message || "Failed to join shared apartment"), "info");
     }
   };
 

@@ -1,7 +1,9 @@
 import { useState } from "react";
-import wg_api from "../services/wg_api"; // New: Import the dedicated WG API service
+import wg_api from "../services/wg_api"; 
+import { useAlert } from "../contexts/AlertContext";
 
 const WGManagement = ({ onCreated }) => {
+  const { showAlert } = useAlert();
   const [form, setForm] = useState({ title: "", address: "", etage: "", description: "" });
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -9,11 +11,13 @@ const WGManagement = ({ onCreated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await wg_api.createWG(form); // New: Use wg_api to create a WG
-      onCreated(res.data); // res.data now contains the full WG object with ID
+      const res = await wg_api.createWG(form); 
+      onCreated(res.data);
       setForm({ title: "", address: "", etage: "", description: "" });
+      showAlert("Shared apartment created successfully!", "success");
     } catch (err) {
-      alert("Error: " + (err.response?.data?.message || "Failed to create shared apartment"));
+      const errorMessage = err.response?.data?.message || "Failed to create shared apartment";
+      showAlert(`${errorMessage}`, "error");
     }
   };
 

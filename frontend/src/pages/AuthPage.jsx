@@ -2,18 +2,19 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
-
+import { useAlert } from "../contexts/AlertContext";
 const AuthPage = ({ mode }) => {
   const navigate = useNavigate();
   const { login, register } = useAuth();
   const { darkMode } = useTheme();
+  const { showAlert } = useAlert(); // 2. Use the showAlert function
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
+  // const [error, setError] = useState(""); // Remove local error state
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Email validation regex (basic)
@@ -21,23 +22,23 @@ const AuthPage = ({ mode }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    // setError(""); // Remove clearing local error state
     setIsSubmitting(true);
 
     if (mode === "register") {
       // Client-side validation for registration
       if (!emailRegex.test(email)) {
-        setError("Please enter a valid email address.");
+        showAlert("Please enter a valid email address.", 'error'); // Use custom alert
         setIsSubmitting(false);
         return;
       }
       if (password.length < 8) {
-        setError("Password must be at least 8 characters long.");
+        showAlert("Password must be at least 8 characters long.", 'error'); // Use custom alert
         setIsSubmitting(false);
         return;
       }
       if (password !== confirmPassword) {
-        setError("Passwords do not match.");
+        showAlert("Passwords do not match.", 'error'); // Use custom alert
         setIsSubmitting(false);
         return;
       }
@@ -52,14 +53,16 @@ const AuthPage = ({ mode }) => {
 
     if (result === true) {
       if (mode === "login") {
-        // NEW: Redirection to strHomePage is now handled by the login function in AuthContext.jsx
+        // Redirection handled by login function in AuthContext.jsx
+        showAlert("Login successful!", 'success'); // Optional: Show success alert on successful login
       } else {
+        showAlert("Registration successful! Please log in.", 'success'); // Show success alert for register
         navigate("/login");
       }
     } else if (typeof result === 'string') {
-      setError(result);
+      showAlert(result, 'error'); // Show API error message
     } else {
-      setError(mode === "login" ? "Login failed. Check your credentials." : "Registration failed. Try again.");
+      showAlert(mode === "login" ? "Login failed. Check your credentials." : "Registration failed. Try again.", 'error'); // Show generic error
     }
     
     setIsSubmitting(false);
@@ -72,7 +75,6 @@ const AuthPage = ({ mode }) => {
         <h2 className="text-3xl font-semibold mb-6 text-center">
           {mode === "login" ? "Login" : "Register"}
         </h2>
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {mode === "register" && (
             <>

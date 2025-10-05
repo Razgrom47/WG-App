@@ -16,6 +16,7 @@ import {
 import { MdOutlineCheckBoxOutlineBlank, MdOutlineCheckBox } from "react-icons/md";
 import { FaMoneyBillAlt } from "react-icons/fa";
 import BudgetGoalPieChart from "../components/BudgetGoalPieChart";
+import { useAlert } from "../contexts/AlertContext"; 
 
 const BudgetPlanDetailPage = () => {
   const { id } = useParams();
@@ -47,6 +48,7 @@ const BudgetPlanDetailPage = () => {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [currentCostToAssign, setCurrentCostToAssign] = useState(null);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const { showAlert, confirm } = useAlert(); 
 
   const fetchBudgetPlanAndWG = async () => {
     try {
@@ -85,8 +87,7 @@ const BudgetPlanDetailPage = () => {
       await fetchBudgetPlanAndWG();
       setOpenMenuId(null);
     } catch (err) {
-      console.error("Failed to toggle cost paid status:", err);
-      alert("Failed to toggle cost paid status. Please try again.");
+      showAlert("Failed to toggle cost paid status. Please try again.", "error");
     }
   };
 
@@ -102,7 +103,7 @@ const BudgetPlanDetailPage = () => {
 
   const handleSaveEditCost = async () => {
     if (!editedTitle || editedGoal === "") {
-      alert("Please enter a title and goal for the cost.");
+      showAlert("Please enter a title and goal for the cost.", "warning");
       return;
     }
     const updatedData = {
@@ -121,22 +122,23 @@ const BudgetPlanDetailPage = () => {
       setEditedGoal("");
       setEditedPaid("");
     } catch (err) {
-      console.error("Failed to update cost:", err);
-      alert("Failed to update cost. Please try again.");
+      showAlert("Failed to update cost. Please try again.", "error");
     }
   };
 
   const handleDeleteCost = async (costId) => {
-    if (
-      window.confirm("Are you sure you want to delete this cost?")
-    ) {
+    const confirmed = await confirm({
+        title: "Delete Cost",
+        message: "Are you sure you want to delete this cost? This action cannot be undone.",
+    });
+
+    if (confirmed) {
       try {
         await cost_api.deleteCost(costId);
         await fetchBudgetPlanAndWG();
         setOpenMenuId(null);
       } catch (err) {
-        console.error("Failed to delete cost:", err);
-        alert("Failed to delete cost. Please try again.");
+        showAlert("Failed to delete cost. Please try again.", "error");
       }
     }
   };
@@ -147,7 +149,7 @@ const BudgetPlanDetailPage = () => {
 
   const handleSaveNewCost = async () => {
     if (!newCostTitle || newCostGoal === "") {
-      alert("Please enter a title and goal for the new cost.");
+      showAlert("Please enter a title and goal for the new cost.", "warning");
       return;
     }
     const costData = {
@@ -163,8 +165,7 @@ const BudgetPlanDetailPage = () => {
       setNewCostDescription("");
       setNewCostGoal("");
     } catch (err) {
-      console.error("Failed to create cost:", err);
-      alert("Failed to create cost. Please try again.");
+      showAlert("Failed to create cost. Please try again.", "error");
     }
   };
 
@@ -197,10 +198,9 @@ const BudgetPlanDetailPage = () => {
       setAssignModalOpen(false);
       setCurrentCostToAssign(null);
       setSelectedUserIds([]);
-      alert("User assignments updated successfully!");
+      showAlert("User assignments updated successfully!", "success");
     } catch (err) {
-      console.error("Failed to update user assignments:", err);
-      alert("Failed to update user assignments. Please try again.");
+      showAlert("Failed to update user assignments. Please try again.", "error");
     }
   };
 

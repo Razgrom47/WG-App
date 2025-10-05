@@ -12,6 +12,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { MdOutlineCheckBoxOutlineBlank, MdOutlineCheckBox } from "react-icons/md";
+import { useAlert } from "../contexts/AlertContext"; 
 
 const BudgetPlansPage = () => {
   const { id } = useParams();
@@ -40,6 +41,7 @@ const BudgetPlansPage = () => {
   const [editedGoal, setEditedGoal] = useState("");
   const [editedDeadline, setEditedDeadline] = useState("");
 
+  const { showAlert, confirm } = useAlert(); 
   const fetchWGAndBudgetPlans = async () => {
     try {
       setLoading(true);
@@ -74,7 +76,7 @@ const BudgetPlansPage = () => {
 
   const handleSaveNewBudgetPlan = async () => {
     if (!newBudgetPlanTitle || !newBudgetPlanGoal) {
-      alert("Please enter a title and goal for the new budget plan.");
+      showAlert("Please enter a title and goal for the new budget plan.", "warning");
       return;
     }
 
@@ -94,8 +96,7 @@ const BudgetPlansPage = () => {
       setNewBudgetPlanGoal("");
       setNewBudgetPlanDeadline("");
     } catch (err) {
-      console.error("Failed to create budget plan:", err);
-      alert("Failed to create budget plan. Please try again.");
+      showAlert("Failed to create budget plan. Please try again.", "error");
     }
   };
 
@@ -117,7 +118,7 @@ const BudgetPlansPage = () => {
 
   const handleSaveEditBudgetPlan = async () => {
     if (!editedTitle || !editedGoal) {
-      alert("Please enter a title and goal for the budget plan.");
+      showAlert("Please enter a title and goal for the budget plan.", "warning");
       return;
     }
     const updatedData = {
@@ -136,25 +137,24 @@ const BudgetPlansPage = () => {
       setEditedGoal("");
       setEditedDeadline("");
     } catch (err) {
-      console.error("Failed to update budget plan:", err);
-      alert("Failed to update budget plan. Please try again.");
+      showAlert("Failed to update budget plan. Please try again.", "error");
     }
   };
 
   const handleDeleteBudgetPlan = async (budgetPlanId) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this budget plan? This action cannot be undone."
-      )
-    ) {
-      try {
-        await budget_planning_api.deleteBudgetPlanning(budgetPlanId);
-        await fetchWGAndBudgetPlans();
-        setOpenMenuId(null);
-      } catch (err) {
-      console.error("Failed to delete budget plan:", err);
-      alert("Failed to delete budget plan. Please try again.");
-      }
+    const confirmed = await confirm({
+        title: "Delete Budget Plan",
+        message: "Are you sure you want to delete this budget plan? All associated costs will also be deleted.",
+    });
+    
+    if (confirmed) {
+        try {
+            await budget_planning_api.deleteBudgetPlanning(budgetPlanId);
+            await fetchWGAndBudgetPlans();
+            setOpenMenuId(null);
+        } catch (err) {
+            showAlert("Failed to delete budget plan. Please try again.", "error");
+        }
     }
   };
   

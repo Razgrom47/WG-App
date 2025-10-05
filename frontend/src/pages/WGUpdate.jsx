@@ -3,11 +3,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import wg_api from "../services/wg_api";
 import { FaArrowLeft, FaSave, FaUserPlus, FaTrash, FaTimes } from "react-icons/fa";
+import { useAlert } from "../contexts/AlertContext";
 
 const WGUpdate = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showAlert, confirm } = useAlert(); 
   const [wg, setWg] = useState(null);
   const [form, setForm] = useState({
     title: "",
@@ -62,10 +64,11 @@ const WGUpdate = () => {
     e.preventDefault();
     try {
       await wg_api.updateWG(id, { ...form, is_public: isPublic });
-      alert("Shared apartment updated successfully!");
+      showAlert("Shared apartment updated successfully!", "success");
       navigate(`/wg/${id}`);
     } catch (err) {
-      alert("Error: " + (err.response?.data?.message || "Failed to update shared apartment."));
+      const errorMessage = err.response?.data?.message || "Failed to update shared apartment.";
+      showAlert(`Error: ${errorMessage}`, "error");
     }
   };
 
@@ -84,22 +87,20 @@ const WGUpdate = () => {
 
   const handleSendTransferRequest = async () => {
     if (!usernameToTransfer) {
-      alert("Please enter a username.");
+      showAlert("Please enter a username.", "warning");
       return;
     }
     if (usernameToTransfer === user.name) {
-      alert("You cannot transfer creator status to yourself.");
+      showAlert("You cannot transfer creator status to yourself.", "warning");
       return;
     }
     try {
       await wg_api.transferCreator(id, usernameToTransfer);
-      alert(`Creator status transferred to ${usernameToTransfer} successfully!`);
+      showAlert(`Creator status transferred to ${usernameToTransfer} successfully!`, "success");
       navigate(`/wg/${id}`);
     } catch (err) {
-      alert(
-        err.response?.data?.message ||
-        `Failed to transfer creator status. Please try again.`
-      );
+      const errorMessage = err.response?.data?.message || `Failed to transfer creator status. Please try again.`;
+      showAlert(errorMessage, "error");
     } finally {
       setTransferCreatorModalOpen(false);
       setUsernameToTransfer("");
@@ -107,14 +108,19 @@ const WGUpdate = () => {
   };
 
   const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this shared apartment? This action cannot be undone.")) {
-      try {
-        await wg_api.deleteWG(id);
-        alert("Shared apartment deleted successfully.");
-        navigate("/");
-      } catch (err) {
-        alert("Error: " + (err.response?.data?.message || "Failed to delete shared apartment."));
-      }
+    const confirmed = await confirm({
+        title: "Delete Shared Apartment",
+        message: "Are you absolutely sure you want to delete this shared apartment? This action cannot be undone, and all associated data will be lost.",
+    });
+
+    if (confirmed) {
+        try {
+            await wg_api.deleteWG(id);
+            showAlert("Shared apartment deleted successfully.", "success");
+            navigate("/");
+        } catch (err) {
+            showAlert("Failed to delete shared apartment. Please try again.", "error");
+        }
     }
   };
 

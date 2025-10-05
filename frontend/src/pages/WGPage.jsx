@@ -18,11 +18,13 @@ import {
   FaUserPlus,
   FaCog, // Added FaCog for the settings icon
 } from "react-icons/fa";
+import { useAlert } from "../contexts/AlertContext"; 
 
 const WGPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showAlert, confirm } = useAlert(); 
   const [wg, setWg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -86,55 +88,59 @@ const WGPage = () => {
       fetchWG();
       setOpenMenuId(null);
     } catch (err) {
-      console.error("Failed to toggle admin status:", err);
-      alert("Failed to change admin status. Please try again.");
+      showAlert("Failed to change admin status. Please try again.", "error");
     }
   };
 
   const handleKickUser = async (userId) => {
-    if (window.confirm("Are you sure you want to kick this user from the WG?")) {
+    const confirmed = await confirm({
+        title: "Kick User",
+        message: "Are you sure you want to kick this user from the shared apartment? This action cannot be undone.",
+    });
+
+    if (confirmed) {
       try {
         await wg_api.kickUser(id, userId);
         fetchWG();
         setOpenMenuId(null);
       } catch (err) {
-        console.error("Failed to kick user:", err);
-        alert("Failed to kick user. Please try again.");
+        showAlert("Failed to kick user. Please try again.", "error");
       }
     }
   };
 
   const handleSendInvite = async () => {
     if (!usernameToInvite) {
-      alert("Please enter a username.");
+      showAlert("Please enter a username.", "warning");
       return;
     }
     try {
       await wg_api.inviteUserByUsername(id, usernameToInvite);
-      alert("User invited successfully!");
+      showAlert("User invited successfully!", "success");
       setInviteModalOpen(false);
       setUsernameToInvite("");
       fetchWG();
     } catch (err) {
-      console.error("Failed to invite user:", err);
-      alert(
+      showAlert(
         err.response?.data?.message ||
-          "Failed to invite user. Please try again."
+          "Failed to invite user. Please try again.", "error"
       );
     }
   };
 
   const handleLeaveWG = async () => {
-    if (window.confirm("Are you sure you want to leave this shared apartment?")) {
+    const confirmed = await confirm({ // <-- UPDATED HERE
+        title: "Leave Shared Apartment",
+        message: "Are you sure you want to leave this shared apartment? You will lose access to all its data.",
+    });
+
+    if (confirmed) {
       try {
         await wg_api.leaveWG(id);
-        alert("You have successfully left the shared apartment.");
+        showAlert("Successfully left the shared apartment.", "success");
         navigate("/");
       } catch (err) {
-        console.error("Failed to leave WG:", err);
-        alert(
-          err.response?.data?.message || "Failed to leave WG. Please try again."
-        );
+        showAlert("Failed to leave the shared apartment. Please try again.", "error");
       }
     }
   };

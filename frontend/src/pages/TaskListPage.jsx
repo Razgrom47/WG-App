@@ -13,6 +13,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { MdOutlineCheckBoxOutlineBlank, MdOutlineCheckBox } from "react-icons/md";
+import { useAlert } from "../contexts/AlertContext"; 
 
 const TaskListPage = () => {
   const { id } = useParams();
@@ -28,6 +29,7 @@ const TaskListPage = () => {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [currentTaskListToAssign, setCurrentTaskListToAssign] = useState(null);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const { showAlert, confirm } = useAlert(); 
 
   // State for Create Task List Modal
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -82,7 +84,7 @@ const TaskListPage = () => {
 
   const handleSaveNewTaskList = async () => {
     if (!newTaskListTitle) {
-      alert("Please enter a title for the new task list.");
+      showAlert("Please enter a title for the new task list.", "warning");
       return;
     }
 
@@ -99,8 +101,7 @@ const TaskListPage = () => {
       setNewTaskListDescription("");
       setNewTaskListDate("");
     } catch (err) {
-      console.error("Failed to create task list:", err);
-      alert("Failed to create task list. Please try again.");
+      showAlert("Failed to create task list. Please try again.", "error");
     }
   };
 
@@ -114,7 +115,7 @@ const TaskListPage = () => {
 
   const handleSaveEditTaskList = async () => {
     if (!editedTitle) {
-      alert("Please enter a title for the task list.");
+      showAlert("Please enter a title for the task list.", "warning");
       return;
     }
     const updatedData = {
@@ -129,25 +130,25 @@ const TaskListPage = () => {
       setEditedTitle("");
       setEditedDescription("");
     } catch (err) {
-      console.error("Failed to update task list:", err);
-      alert("Failed to update task list. Please try again.");
+      showAlert("Failed to update task list. Please try again.", "error");
     }
   };
 
-  const handleDeleteTaskList = async (tasklistId) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this task list? This action cannot be undone."
-      )
-    ) {
-      try {
-        await task_list_api.deleteTaskList(tasklistId);
-        await fetchWGAndTaskLists();
-        setOpenMenuId(null);
-      } catch (err) {
-        console.error("Failed to delete task list:", err);
-        alert("Failed to delete task list. Please try again.");
-      }
+  const handleDeleteTaskList = async (listId) => {
+    const confirmed = await confirm({
+        title: "Delete Task List",
+        message: "Are you sure you want to delete this task list? All associated tasks will also be deleted. This action cannot be undone.",
+    });
+    
+    if (confirmed) {
+        try {
+            await task_list_api.deleteTaskList(listId);
+            await fetchWGAndTaskLists();
+            setOpenMenuId(null);
+            showAlert("Task list deleted successfully.", "success");
+        } catch (err) {
+            showAlert("Failed to delete task list. Please try again.", "error");
+        }
     }
   };
 
@@ -161,8 +162,7 @@ const TaskListPage = () => {
       await fetchWGAndTaskLists();
       setOpenMenuId(null);
     } catch (err) {
-      console.error("Failed to toggle task list check status:", err);
-      alert("Failed to toggle task list check status. Please try again.");
+      showAlert("Failed to toggle task list check status. Please try again.", "error");
     }
   };
 
@@ -197,11 +197,10 @@ const TaskListPage = () => {
         await task_list_api.removeUsersFromTaskList(currentTaskListToAssign.id, usersToUnassign);
       }
 
-      alert("User assignments updated successfully!");
+      showAlert("User assignments updated successfully!", "success");
       await fetchWGAndTaskLists();
     } catch (err) {
-      console.error("Failed to update user assignments:", err);
-      alert("Failed to update user assignments. Please try again.");
+      showAlert("Failed to update user assignments. Please try again.", "error");
     }
     setCurrentTaskListToAssign(null);
   };

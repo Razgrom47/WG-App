@@ -1,31 +1,31 @@
 import { useAuth } from "../contexts/AuthContext";
-import { useState, useEffect } from "react"; // NEW: useEffect added
+import { useState, useEffect } from "react"; 
 import api from "../services/api";
-import wg_api from "../services/wg_api"; // NEW: import wg_api (assuming this is where getWGs is)
-import { FaUserEdit, FaTrash, FaSignOutAlt, FaArrowLeft, FaHome } from "react-icons/fa"; // NEW: FaHome added
+import wg_api from "../services/wg_api"; 
+import { FaUserEdit, FaTrash, FaSignOutAlt, FaArrowLeft, FaHome } from "react-icons/fa"; 
 import { Link, useNavigate } from "react-router-dom";
+import { useAlert } from "../contexts/AlertContext"; // Import useAlert
 
 const ProfilePage = () => {
   const { user, logout, updateUser, deleteAccount } = useAuth();
   const navigate = useNavigate();
-  // NEW: State for user's WGs and selected home page
+  const { showAlert, confirm } = useAlert(); 
+
   const [wgs, setWgs] = useState([]);
-  // Initializes selectedHome from user's current strHomePage or defaults to "/"
   const [selectedHome, setSelectedHome] = useState(user?.strHomePage || "/"); 
 
   const [form, setForm] = useState({
     username: user?.username || "",
     email: user?.email || "",
   });
-  // State for new password fields
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // NEW: Fetch user's WGs on component mount
+  // Fetch user's WGs on component mount
   useEffect(() => {
     const fetchWGs = async () => {
       try {
-        const res = await wg_api.getWGs(); // Assuming wg_api.getWGs() returns a list of WGs
+        const res = await wg_api.getWGs(); 
         setWgs(res.data);
       } catch (err) {
         console.error("Failed to fetch WGs:", err);
@@ -37,9 +37,15 @@ const ProfilePage = () => {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleUpdate = async () => {
-    // Client-side validation for passwords
+    // 1. Password Match Validation
     if (newPassword && newPassword !== confirmPassword) {
-      alert("New passwords do not match. Please try again.");
+      showAlert("New passwords do not match. Please try again.", "warning");
+      return;
+    }
+    
+    // 2. NEW: Password Length Validation (at least 8 characters)
+    if (newPassword && newPassword.length < 8) {
+      showAlert("New password must be at least 8 characters long.", "warning");
       return;
     }
     
@@ -50,40 +56,41 @@ const ProfilePage = () => {
         payload.new_password = newPassword;
       }
 
-      // NEW: Prepare home_page_wg_id for payload
+      // Prepare home_page_wg_id for payload
       let homePageIdToSend;
       if (selectedHome === "/") {
-        // If "/" is selected, send "/"
         homePageIdToSend = "/";
       } else {
-        // Otherwise, extract the WG ID from the stored path '/wg/ID' and send only the ID
-        // The value in the dropdown is '/wg/ID', so we split it.
         homePageIdToSend = selectedHome.split('/wg/')[1];
       }
-      // The backend (user.py) expects 'home_page_wg_id'
       payload.home_page_wg_id = homePageIdToSend;
       
-      // Call the updateUser function from AuthContext with the new payload
       await updateUser(payload);
       
-      alert("Profile updated successfully!");
+      showAlert("Profile updated successfully!", "success");
+      
       // Clear password fields after a successful update
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
-      alert("Update failed: " + (err.response?.data?.message || "Error"));
+      const errorMessage = err.response?.data?.message || "An unexpected error occurred during profile update.";
+      showAlert(`Update failed: ${errorMessage}`, "error");
     }
   };
 
   const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-      const success = await deleteAccount();
-      if (success) {
-        alert("Account successfully deleted.");
-        // Redirect is handled by deleteAccount calling logout
-      } else {
-        alert("Failed to delete account. Please try again.");
-      }
+    const confirmed = await confirm({
+        title: "Delete Account",
+        message: "Are you sure you want to permanently delete your account? This action cannot be undone.",
+    });
+    if (confirmed) {
+        try {
+            await deleteAccount();
+            showAlert("Account deleted successfully.", "success");
+            navigate("/");
+        } catch (err) {
+            showAlert("Failed to delete account. Please try again.", "error");
+        }
     }
   };
 

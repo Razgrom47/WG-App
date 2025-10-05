@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
+import { AlertProvider } from "./contexts/AlertContext"; 
 import LoadingScreen from "./components/LoadingScreen";
 import AuthPage from "./pages/AuthPage";
 import HomePage from "./pages/HomePage";
@@ -50,25 +51,27 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={<AuthPage mode="login" />} />
-      <Route path="/register" element={<AuthPage mode="register" />} />
-      <Route path="/splash" element={<LoadingScreen />} />
+    <AlertProvider>
+      <Routes>
+        <Route path="/login" element={<AuthPage mode="login" />} />
+        <Route path="/register" element={<AuthPage mode="register" />} />
+        <Route path="/splash" element={<LoadingScreen />} />
 
-      {/* Protected Routes */}
-      <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>}/>
-      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>}/>
-      <Route path="/wg/:id" element={<ProtectedRoute><WGPage /></ProtectedRoute>}/>
-      <Route path="/wg/:id/manage" element={<ProtectedRoute><WGUpdate /></ProtectedRoute>} />
-      <Route path="/wg/:id/task_lists" element={<ProtectedRoute>  <TaskListPage /> </ProtectedRoute>} />
-      <Route path="/tasklist/:id" element={<ProtectedRoute><TaskListDetailPage /></ProtectedRoute>} />
-      <Route path="/wg/:id/undone-tasks" element={<ProtectedRoute><UndoneTasksPage /></ProtectedRoute>} />
-      <Route path="/wg/:id/shopping_lists" element={<ProtectedRoute> <ShoppingListPage /> </ProtectedRoute>} />
-      <Route path="/shoppinglist/:id" element={<ProtectedRoute><ShoppingListDetailPage /></ProtectedRoute>} />
-      <Route path="/wg/:id/budget_plans" element={<ProtectedRoute> <BudgetPlansPage /> </ProtectedRoute>} />
-      <Route path="/budgetplan/:id" element={<ProtectedRoute><BudgetPlanDetailPage /></ProtectedRoute>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Protected Routes */}
+        <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>}/>
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>}/>
+        <Route path="/wg/:id" element={<ProtectedRoute><WGPage /></ProtectedRoute>}/>
+        <Route path="/wg/:id/manage" element={<ProtectedRoute><WGUpdate /></ProtectedRoute>} />
+        <Route path="/wg/:id/task_lists" element={<ProtectedRoute>  <TaskListPage /> </ProtectedRoute>} />
+        <Route path="/tasklist/:id" element={<ProtectedRoute><TaskListDetailPage /></ProtectedRoute>} />
+        <Route path="/wg/:id/undone-tasks" element={<ProtectedRoute><UndoneTasksPage /></ProtectedRoute>} />
+        <Route path="/wg/:id/shopping_lists" element={<ProtectedRoute> <ShoppingListPage /> </ProtectedRoute>} />
+        <Route path="/shoppinglist/:id" element={<ProtectedRoute><ShoppingListDetailPage /></ProtectedRoute>} />
+        <Route path="/wg/:id/budget_plans" element={<ProtectedRoute> <BudgetPlansPage /> </ProtectedRoute>} />
+        <Route path="/budgetplan/:id" element={<ProtectedRoute><BudgetPlanDetailPage /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AlertProvider>
   );
 }
 

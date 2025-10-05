@@ -14,6 +14,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { MdOutlineCheckBoxOutlineBlank, MdOutlineCheckBox } from "react-icons/md";
+import { useAlert } from "../contexts/AlertContext"; 
 
 const TaskListDetailPage = () => {
   const { id } = useParams();
@@ -26,6 +27,7 @@ const TaskListDetailPage = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [menuDirection, setMenuDirection] = useState({});
   const menuRefs = useRef({});
+  const { showAlert, confirm } = useAlert(); 
 
   // State for Create Task Modal
   const [createTaskModalOpen, setCreateTaskModalOpen] = useState(false);
@@ -87,22 +89,24 @@ const TaskListDetailPage = () => {
       await fetchTaskListAndWG();
       setOpenMenuId(null);
     } catch (err) {
-      console.error("Failed to toggle task check status:", err);
-      alert("Failed to toggle task check status. Please try again.");
+      showAlert("Failed to toggle task check status. Please try again.", "error");
     }
   };
 
   const handleDeleteTask = async (taskId) => {
-    if (
-      window.confirm("Are you sure you want to delete this task?")
-    ) {
+    const confirmed = await confirm({
+        title: "Delete Task",
+        message: "Are you sure you want to delete this task? This action cannot be undone.",
+    });
+
+    if (confirmed) {
       try {
         await task_api.deleteTask(taskId);
         await fetchTaskListAndWG();
         setOpenMenuId(null);
+        showAlert("Task deleted successfully.", "success");
       } catch (err) {
-        console.error("Failed to delete task:", err);
-        alert("Failed to delete task. Please try again.");
+        showAlert("Failed to delete task. Please try again.", "error");
       }
     }
   };
@@ -113,7 +117,7 @@ const TaskListDetailPage = () => {
 
   const handleSaveNewTask = async () => {
     if (!newTaskTitle) {
-      alert("Please enter a title for the new task.");
+      showAlert("Please enter a title for the new task.", "warning");
       return;
     }
     const taskData = {
@@ -131,8 +135,7 @@ const TaskListDetailPage = () => {
       setNewTaskStartDate("");
       setNewTaskEndDate("");
     } catch (err) {
-      console.error("Failed to create task:", err);
-      alert("Failed to create task. Please try again.");
+      showAlert("Failed to create task. Please try again.", "error");
     }
   };
 
@@ -149,7 +152,7 @@ const TaskListDetailPage = () => {
 
   const handleSaveEditTask = async () => {
     if (!editedTaskTitle) {
-      alert("Please enter a title for the task.");
+      showAlert("Please enter a title for the task.", "warning");
       return;
     }
     const updatedData = {
@@ -168,8 +171,7 @@ const TaskListDetailPage = () => {
       setEditedTaskStartDate("");
       setEditedTaskEndDate("");
     } catch (err) {
-      console.error("Failed to update task:", err);
-      alert("Failed to update task. Please try again.");
+      showAlert("Failed to update task. Please try again.", "error");
     }
   };
 
@@ -202,11 +204,10 @@ const TaskListDetailPage = () => {
       if (usersToUnassign.length > 0) {
         await task_api.removeUsersFromTask(currentTaskToAssign.id, usersToUnassign);
       }
-      alert("User assignments updated successfully!");
+      showAlert("User assignments updated successfully!", "success");
       await fetchTaskListAndWG();
     } catch (err) {
-      console.error("Failed to update user assignments:", err);
-      alert("Failed to update user assignments. Please try again.");
+      showAlert("Failed to update user assignments. Please try again.", "error");
     }
     setCurrentTaskToAssign(null);
   };

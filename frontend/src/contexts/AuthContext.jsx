@@ -16,11 +16,27 @@ export const AuthProvider = ({ children }) => {
   // Function to handle profile updates and new token from the backend
   const updateUser = async (formData) => {
     try {
-      // NOTE: The backend logic in user.py now returns the updated user object
+      // NOTE: The backend logic in user.py now returns the updated user object AND a new token if username/email changed
       const res = await api.put("/user", formData);
-      // The backend no longer returns a token on profile update, only the user object
+      
+      // The backend now returns a token on profile update if username/email changed
       if (res.data?.user) {
         setUser(res.data.user);
+        // NEW: Check for and update the token
+        if (res.data.token) {
+          localStorage.setItem("token", res.data.token);
+          setToken(res.data.token);
+          // NEW: Re-configure Axios interceptor with the new token
+          // This is crucial for subsequent requests.
+          api.interceptors.request.use((config) => {
+            const newToken = res.data.token; // Use the new token
+            if (newToken) {
+              config.headers.Authorization = `Bearer ${newToken}`;
+            }
+            return config;
+          });
+          console.log("Token refreshed after profile update."); // Log for debugging
+        }
         return true;
       }
       return false;

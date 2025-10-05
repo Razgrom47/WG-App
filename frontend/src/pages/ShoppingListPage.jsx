@@ -12,6 +12,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { MdOutlineCheckBoxOutlineBlank, MdOutlineCheckBox } from "react-icons/md";
+import { useAlert } from "../contexts/AlertContext"; 
 
 const ShoppingListPage = () => {
   const { id } = useParams();
@@ -24,6 +25,7 @@ const ShoppingListPage = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [menuDirection, setMenuDirection] = useState({});
   const menuRefs = useRef({});
+  const { showAlert, confirm } = useAlert(); 
 
   // State for Create Shopping List Modal
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -73,7 +75,7 @@ const ShoppingListPage = () => {
 
   const handleSaveNewShoppingList = async () => {
     if (!newShoppingListTitle) {
-      alert("Please enter a title for the new shopping list.");
+      showAlert("Please enter a title for the new shopping list.", "warning");
       return;
     }
 
@@ -90,8 +92,7 @@ const ShoppingListPage = () => {
       setNewShoppingListDescription("");
       setNewShoppingListDate("");
     } catch (err) {
-      console.error("Failed to create shopping list:", err);
-      alert("Failed to create shopping list. Please try again.");
+      showAlert("Failed to create shopping list. Please try again.", "error");
     }
   };
 
@@ -105,7 +106,7 @@ const ShoppingListPage = () => {
 
   const handleSaveEditShoppingList = async () => {
     if (!editedTitle) {
-      alert("Please enter a title for the shopping list.");
+      showAlert("Please enter a title for the shopping list.", "warning");
       return;
     }
     const updatedData = {
@@ -120,25 +121,24 @@ const ShoppingListPage = () => {
       setEditedTitle("");
       setEditedDescription("");
     } catch (err) {
-      console.error("Failed to update shopping list:", err);
-      alert("Failed to update shopping list. Please try again.");
+      showAlert("Failed to update shopping list. Please try again.", "error");
     }
   };
 
-  const handleDeleteShoppingList = async (shoppinglistId) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this shopping list? This action cannot be undone."
-      )
-    ) {
-      try {
-        await shopping_list_api.deleteShoppingList(shoppinglistId);
-        await fetchWGAndShoppingLists();
-        setOpenMenuId(null);
-      } catch (err) {
-        console.error("Failed to delete shopping list:", err);
-        alert("Failed to delete shopping list. Please try again.");
-      }
+  const handleDeleteShoppingList = async (listId) => {
+    const confirmed = await confirm({
+        title: "Delete Shopping List",
+        message: "Are you sure you want to delete this shopping list? All associated items will also be deleted.",
+    });
+
+    if (confirmed) {
+        try {
+            await shopping_list_api.deleteShoppingList(listId);
+            await fetchWGAndShoppingLists();
+            setOpenMenuId(null);
+        } catch (err) {
+            showAlert("Failed to delete shopping list. Please try again.", "error");
+        }
     }
   };
 
@@ -148,8 +148,7 @@ const ShoppingListPage = () => {
       await fetchWGAndShoppingLists();
       setOpenMenuId(null);
     } catch (err) {
-      console.error("Failed to toggle shopping list check status:", err);
-      alert("Failed to toggle shopping list check status. Please try again.");
+      showAlert("Failed to toggle shopping list check status. Please try again.", "error");
     }
   };
 
