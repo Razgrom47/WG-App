@@ -37,9 +37,6 @@ def execute_query(query):
         if conn:
             conn.close()
 
-# Your Database Connection URL (already defined above, but repeated for clarity)
-# DB_URL = "postgresql://neondb_owner:npg_gVRZa8obsI0O@ep-summer-dust-agddh9iv-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
-
 def list_all_tables():
     """Connects to the database and lists all tables in the public schema."""
     conn = None
