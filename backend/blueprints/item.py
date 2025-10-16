@@ -34,22 +34,44 @@ def create_item():
         application/json:
           schema:
             type: object
+            required:
+              - shoppinglist_id
+              - title
             properties:
               shoppinglist_id:
                 type: integer
+                description: The ID of the parent Shopping List.
               title:
                 type: string
+                description: The title of the new item.
               description:
                 type: string
+                description: An optional description for the item.
     responses:
       201:
         description: Item created
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Item'
+              type: object
+              properties:
+                id:
+                  type: integer
+                  description: The unique identifier of the item.
+                title:
+                  type: string
+                  description: The title of the item.
+                description:
+                  type: string
+                  description: The description of the item.
+                is_checked:
+                  type: boolean
+                  description: Whether the item has been marked as purchased.
+                shoppinglist_id:
+                  type: integer
+                  description: The ID of the parent Shopping List.
       403:
-        description: Not authorized
+        description: Not authorized (e.g., user is not part of the shopping list's workgroup)
     """
     data = request.get_json()
     shopping_list = ShoppingList.query.get(data['shoppinglist_id'])
@@ -81,6 +103,7 @@ def update_item(item_id):
         required: true
         schema:
           type: integer
+          description: The ID of the item to update.
     requestBody:
       required: true
       content:
@@ -90,19 +113,39 @@ def update_item(item_id):
             properties:
               title:
                 type: string
+                description: The new title for the item.
               description:
                 type: string
+                description: The new description for the item.
               is_checked:
                 type: boolean
+                description: Whether the item is checked off (e.g., purchased).
+            # Note: Fields are optional since it's an update (PUT/PATCH).
     responses:
       200:
         description: Item updated
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Item'
+              type: object
+              properties:
+                id:
+                  type: integer
+                  description: The unique identifier of the item.
+                title:
+                  type: string
+                  description: The title of the item.
+                description:
+                  type: string
+                  description: The description of the item.
+                is_checked:
+                  type: boolean
+                  description: Whether the item has been marked as purchased.
+                shoppinglist_id:
+                  type: integer
+                  description: The ID of the parent Shopping List.
       403:
-        description: Not authorized
+        description: Not authorized (e.g., user is not part of the shopping list's workgroup)
       404:
         description: Item not found
     """

@@ -89,27 +89,75 @@ def create_task_list():
         application/json:
           schema:
             type: object
+            required:
+              - wg_id
+              - title
             properties:
               wg_id:
                 type: integer
+                description: The ID of the workgroup (WG) the task list belongs to.
               title:
                 type: string
+                description: The title of the new task list.
               description:
                 type: string
+                description: An optional description for the task list.
               date:
                 type: string
                 format: date
+                description: An optional due date for the task list (format YYYY-MM-DD).
     responses:
       201:
         description: Task list created
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskList'
+              type: object
+              properties:
+                id:
+                  type: integer
+                  description: The unique identifier of the task list.
+                title:
+                  type: string
+                  description: The title of the task list.
+                description:
+                  type: string
+                  description: The description of the task list.
+                date:
+                  type: string
+                  format: date
+                  nullable: true
+                  description: The due date of the task list.
+                wg_id:
+                  type: integer
+                  description: The ID of the workgroup the list belongs to.
+                created_at:
+                  type: string
+                  format: date-time
+                  description: Timestamp of when the list was created.
+                users:
+                  type: array
+                  description: List of users assigned to this task list (at least the creator).
+                  items:
+                    type: object
+                    properties:
+                      idUser:
+                        type: integer
+                        description: User's ID.
+                      username:
+                        type: string
+                        description: User's username.
+                      # Add other user properties here if needed
+                tasks:
+                  type: array
+                  description: A list of tasks within this list (will be empty on creation).
+                  items:
+                    type: object
+                    description: Task object schema (simplified).
       403:
-        description: Not authorized
+        description: Not authorized (user is not a member of the workgroup)
       400:
-        description: Invalid input
+        description: Invalid input (e.g., missing required fields, invalid date format)
     """
     data = request.get_json()
     wg_id = data['wg_id']

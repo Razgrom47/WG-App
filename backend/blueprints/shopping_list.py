@@ -50,22 +50,51 @@ def create_shopping_list():
         application/json:
           schema:
             type: object
+            required:
+              - wg_id
+              - title
             properties:
               wg_id:
                 type: integer
+                description: The ID of the workgroup (WG) the list belongs to.
               title:
                 type: string
+                description: The title of the new shopping list.
               description:
                 type: string
+                description: An optional description for the shopping list.
     responses:
       201:
         description: Shopping list created
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ShoppingList'
+              type: object
+              properties:
+                id:
+                  type: integer
+                  description: The unique identifier of the shopping list.
+                title:
+                  type: string
+                  description: The title of the shopping list.
+                description:
+                  type: string
+                  description: The description of the shopping list.
+                creator_id:
+                  type: integer
+                  description: The ID of the user who created the list.
+                wg_id:
+                  type: integer
+                  description: The ID of the workgroup the list belongs to.
+                is_checked:
+                  type: boolean
+                  description: Status indicating if all items are checked/purchased.
+                created_at:
+                  type: string
+                  format: date-time
+                  description: Timestamp of when the list was created.
       403:
-        description: Not authorized
+        description: Not authorized (e.g., user is not part of the specified workgroup)
     """
     data = request.get_json()
     wg_id = data['wg_id']

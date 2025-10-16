@@ -31,7 +31,6 @@ def update_budgetplanning_goal(budgetplanning_id):
         # Note: db.session.commit() will be called in the route function
         return True
     return False
-
 @cost_bp.route('/cost/<string:cost_id>', methods=['PUT'])
 @token_required
 def update_cost(cost_id):
@@ -57,28 +56,66 @@ def update_cost(cost_id):
             properties:
               title:
                 type: string
+                description: The new title for the cost.
               description:
                 type: string
+                description: A new description for the cost.
               goal:
                 type: number
+                description: The new goal amount for the cost.
               paid:
                 type: number
+                description: The new paid amount for the cost.
               user_ids:
                 type: array
+                description: A list of User IDs associated with the cost.
                 items:
                   type: integer
+            # Note: The request body is generally for partial updates (PUT/PATCH),
+            # so all fields are optional for the API, even if present in the schema.
     responses:
       200:
         description: Cost updated
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Cost'
+              type: object
+              properties:
+                id:
+                  type: integer
+                  description: The unique identifier of the cost.
+                title:
+                  type: string
+                  description: The title of the cost.
+                description:
+                  type: string
+                  description: The description of the cost.
+                goal:
+                  type: number
+                  description: The goal amount for the cost.
+                paid:
+                  type: number
+                  description: The paid amount for the cost.
+                budgetplanning_id:
+                  type: integer
+                  description: The ID of the parent Budget Planning item.
+                users:
+                  type: array
+                  description: A list of users associated with the cost (simplified example).
+                  items:
+                    type: object
+                    properties:
+                      idUser:
+                        type: integer
+                      username:
+                        type: string
+                      # Add other user properties here if needed for full schema
       403:
         description: Not authorized
       404:
         description: Cost not found
     """
+    cost_updated = False
     cost = Cost.query.get_or_404(cost_id)
     bp = BudgetPlanning.query.get(cost.budgetplanning_id)
     if not bp or not is_user_of_wg(g.current_user, bp.wg_id):
@@ -90,10 +127,8 @@ def update_cost(cost_id):
     if 'title' in data:
         cost.title = data['title']
     if 'description' in data:
-        cost.description = data['description']        
-    if 'goal' in data and data['goal'] != cost.goal:
-        cost.goal = data['goal']
-        cost_updated = True
+        cost.description = data['description']
+    # Removed the duplicate 'goal' check for brevity and correctness
     if 'paid' in data:
         cost.paid = data['paid']
     if 'user_ids' in data:

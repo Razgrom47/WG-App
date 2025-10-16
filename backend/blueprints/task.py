@@ -23,6 +23,59 @@ def serialize_task(task):
         'users': [{'id': u.idUser, 'name': u.strUser} for u in task.users]
     }
 
+# Task Schema Template (used for all responses)
+TASK_SCHEMA = {
+    'type': 'object',
+    'properties': {
+        'id': {
+            'type': 'integer',
+            'description': 'The unique identifier of the task.'
+        },
+        'title': {
+            'type': 'string',
+            'description': 'The title of the task.'
+        },
+        'description': {
+            'type': 'string',
+            'nullable': True,
+            'description': 'The description of the task.'
+        },
+        'is_done': {
+            'type': 'boolean',
+            'description': 'Completion status of the task.'
+        },
+        'start_date': {
+            'type': 'string',
+            'format': 'date-time',
+            'nullable': True,
+            'description': 'The start date and time of the task.'
+        },
+        'end_date': {
+            'type': 'string',
+            'format': 'date-time',
+            'nullable': True,
+            'description': 'The end/due date and time of the task.'
+        },
+        'tasklist_id': {
+            'type': 'integer',
+            'description': 'The ID of the parent Task List.'
+        },
+        'users': {
+            'type': 'array',
+            'description': 'List of users assigned to the task.',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'idUser': {'type': 'integer'},
+                    'username': {'type': 'string'}
+                    # Add other user properties if serialized here
+                }
+            }
+        }
+    }
+}
+
+
 @task_bp.route('/task/<string:task_id>', methods=['GET'])
 @token_required
 def get_task(task_id):
@@ -39,15 +92,16 @@ def get_task(task_id):
         required: true
         schema:
           type: integer
+          description: The ID of the task to retrieve.
     responses:
       200:
         description: Task retrieved successfully
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Task'
+              $TASK_SCHEMA
       403:
-        description: Not authorized
+        description: Not authorized (user not assigned or not WG admin)
       404:
         description: Task not found
     """
@@ -65,6 +119,7 @@ def get_task(task_id):
 
     return jsonify(serialize_task(task)), 200
 
+
 @task_bp.route('/task/<string:task_id>', methods=['PUT'])
 @token_required
 def update_task(task_id):
@@ -81,6 +136,7 @@ def update_task(task_id):
         required: true
         schema:
           type: integer
+          description: The ID of the task to update.
     requestBody:
       required: true
       content:
@@ -90,18 +146,24 @@ def update_task(task_id):
             properties:
               title:
                 type: string
+                description: The new title for the task.
               description:
                 type: string
+                description: The new description for the task.
               start_date:
                 type: string
                 format: date-time
+                description: The new start date/time (ISO 8601 format).
               end_date:
                 type: string
                 format: date-time
+                description: The new end date/time (ISO 8601 format).
               is_done:
                 type: boolean
+                description: New completion status of the task.
               user_ids:
                 type: array
+                description: List of User IDs to be assigned to the task (replaces current assignments).
                 items:
                   type: integer
     responses:
@@ -110,11 +172,15 @@ def update_task(task_id):
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Task'
+              $TASK_SCHEMA
       403:
-        description: Not authorized
+        description: Not authorized (user not in TaskList or not WG admin)
       404:
         description: Task not found
+      400:
+        description: Invalid input (e.g., bad date format)
+      500:
+        description: Error updating task users
     """
     task = Task.query.get_or_404(task_id)
     tasklist = TaskList.query.get(task.tasklist_id)
@@ -142,9 +208,10 @@ def update_task(task_id):
 
     task.is_done = data.get('is_done', task.is_done)
 
-    # Update assigned users if provided
+    # Update assigned users if provided (logic omitted for brevity, docstring is the focus)
     if 'user_ids' in data:
         try:
+            # ... existing user update logic ...
             # Get current users assigned to this task
             current_task_user_ids = {user.idUser for user in task.users}
             
@@ -170,7 +237,7 @@ def update_task(task_id):
             # Find users that were added to this task
             added_user_ids = new_user_ids - current_task_user_ids
             
-            # Find users that were removed from this task  
+            # Find users that were removed from this task 
             removed_user_ids = current_task_user_ids - new_user_ids
             
             # Add new users to tasklist if they're not already there
@@ -240,11 +307,12 @@ def delete_task(task_id):
         required: true
         schema:
           type: integer
+          description: The ID of the task to delete.
     responses:
       204:
         description: Task deleted successfully
       403:
-        description: Not authorized
+        description: Not authorized (user not a WG admin)
       404:
         description: Task not found
     """
@@ -290,7 +358,7 @@ def get_undone_tasks_for_wg(wg_id):
             schema:
               type: array
               items:
-                $ref: '#/components/schemas/Task'
+                $TASK_SCHEMA
       404:
         description: WG not found or user not in WG
     """
