@@ -2,6 +2,9 @@ from flask import Blueprint, request, jsonify, g
 from extensions import db
 from models import WG, User
 from decorators import token_required
+from blueprints.shopping_list import serialize_shoppinglist
+from blueprints.budget_planning import serialize_budgetplanning
+from blueprints.task_list import serialize_tasklist
 
 wg_bp = Blueprint('wg_bp', __name__)
 
@@ -608,12 +611,7 @@ def get_tasklists_for_wg(wg_id):
     if not is_user_of_wg(g.current_user, wg_id):
         return jsonify({'message': 'Not authorized'}), 403
 
-    tasklists = [{'id': tl.idTaskList,
-                  'title': tl.title,
-                  'is_checked': tl.is_checked,
-                  'date': tl.date,
-                  'users': [{'id': u.idUser, 'name': u.strUser} for u in tl.users]
-                  } for tl in wg.tasklists]
+    tasklists = [serialize_tasklist(tl) for tl in wg.tasklists] 
     return jsonify({'tasklists': tasklists}), 200
 
 @wg_bp.route('/wg/<string:wg_id>/shoppinglists', methods=['GET'])
@@ -647,15 +645,8 @@ def get_shoppinglists_for_wg(wg_id):
     if not is_user_of_wg(g.current_user, wg_id):
         return jsonify({'message': 'Not authorized'}), 403
 
-    shoppinglists = [{'id': sl.idShoppingList,
-                      'title': sl.title,
-                      'description': sl.description,
-                      'is_checked': sl.is_checked,
-                      'date': sl.date,
-                      'creator': {'id': sl.creator_id, 'name': sl.creator.strUser if sl.creator else None}
-                     } for sl in wg.shoppinglists]
+    shoppinglists = [serialize_shoppinglist(sl) for sl in wg.shoppinglists]
     return jsonify({'shoppinglists': shoppinglists}), 200
-
 
 @wg_bp.route('/wg/<string:wg_id>/budgetplanning', methods=['GET'])
 @token_required
@@ -689,13 +680,5 @@ def get_budgetplannings_for_wg(wg_id):
         return jsonify({'message': 'Not authorized'}), 403
 
     # Assuming a relationship 'budgetplannings' exists on the WG model
-    budgetplannings = [{
-        'id': bp.idBudgetPlanning,
-        'title': bp.title,
-        'description': bp.description,
-        'goal': bp.goal,
-        'deadline': bp.deadline,
-        'created_date': bp.created_date,
-        'creator': {'id': bp.creator_id, 'name': bp.creator.strUser if bp.creator else None}
-    } for bp in wg.budgetplannings]
+    budgetplannings = [serialize_budgetplanning(bp) for bp in wg.budgetplannings]
     return jsonify({'budgetplannings': budgetplannings}), 200

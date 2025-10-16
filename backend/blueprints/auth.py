@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 
 auth_bp = Blueprint('auth_bp', __name__)
 
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """
@@ -75,10 +76,6 @@ def login():
         "email": user.strEmail,
         "exp": datetime.utcnow() + timedelta(minutes=10)
     }, current_app.config["SECRET_KEY"], algorithm="HS256")
-
-    session["logged_in"] = True
-    session["userID"] = user.idUser
-    session["username"] = user.strUser
 
     return jsonify({"token": token}), 200
 

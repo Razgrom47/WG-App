@@ -20,60 +20,17 @@ def serialize_cost(cost):
         'users': [{'id': u.idUser, 'name': u.strUser} for u in cost.users]
     }
 
-@cost_bp.route('/cost', methods=['POST'])
-@token_required
-def create_cost():
-    """
-    Create a new cost
-    ---
-    tags:
-      - Cost
-    security:
-      - Bearer: []
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              budgetplanning_id:
-                type: integer
-              title:
-                type: string
-              description:
-                type: string
-              goal:
-                type: number
-              user_ids:
-                type: array
-                items:
-                  type: integer
-    responses:
-      201:
-        description: Cost created
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Cost'
-      403:
-        description: Not authorized
-    """
-    data = request.get_json()
-    bp = BudgetPlanning.query.get(data['budgetplanning_id'])
-    if not bp or not is_user_of_wg(g.current_user, bp.wg_id):
-        return jsonify({'message': 'Not authorized'}), 403
-    users = User.query.filter(User.idUser.in_(data.get('user_ids', []))).all()
-    new_cost = Cost(
-        title=data['title'],
-        description=data.get('description', ''),
-        goal=data['goal'],
-        budgetplanning_id=data['budgetplanning_id'],
-        users=users
-    )
-    db.session.add(new_cost)
-    db.session.commit()
-    return jsonify(serialize_cost(new_cost)), 201
+def update_budgetplanning_goal(budgetplanning_id):
+    """Calculates the total goal of all costs and updates the BudgetPlanning goal."""
+    bp = BudgetPlanning.query.get(budgetplanning_id)
+    if bp:
+        total_goal = db.session.query(db.func.sum(Cost.goal)).filter(
+            Cost.budgetplanning_id == budgetplanning_id
+        ).scalar() or 0.0
+        bp.goal = total_goal
+        # Note: db.session.commit() will be called in the route function
+        return True
+    return False
 
 @cost_bp.route('/cost/<string:cost_id>', methods=['PUT'])
 @token_required
@@ -127,13 +84,23 @@ def update_cost(cost_id):
     if not bp or not is_user_of_wg(g.current_user, bp.wg_id):
         return jsonify({'message': 'Not authorized'}), 403
     data = request.get_json()
-    cost.title = data.get('title', cost.title)
-    cost.description = data.get('description', cost.description)
-    cost.goal = data.get('goal', cost.goal)
-    cost.paid = data.get('paid', cost.paid)
+    if 'goal' in data and data['goal'] != cost.goal:
+        cost.goal = data['goal']
+        cost_updated = True
+    if 'title' in data:
+        cost.title = data['title']
+    if 'description' in data:
+        cost.description = data['description']        
+    if 'goal' in data and data['goal'] != cost.goal:
+        cost.goal = data['goal']
+        cost_updated = True
+    if 'paid' in data:
+        cost.paid = data['paid']
     if 'user_ids' in data:
         users = User.query.filter(User.idUser.in_(data['user_ids'])).all()
         cost.users = users
+    if cost_updated:
+        update_budgetplanning_goal(cost.budgetplanning_id)
     db.session.commit()
     return jsonify(serialize_cost(cost)), 200
 
@@ -165,6 +132,7 @@ def delete_cost(cost_id):
     bp = BudgetPlanning.query.get(cost.budgetplanning_id)
     if not bp or not is_user_of_wg(g.current_user, bp.wg_id):
         return jsonify({'message': 'Not authorized'}), 403
+    update_budgetplanning_goal(cost.budgetplanning_id)
     db.session.delete(cost)
     db.session.commit()
     return jsonify({'message': 'Cost deleted successfully'}), 204

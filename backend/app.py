@@ -2,6 +2,7 @@ from flask import Flask
 from config import Config
 from extensions import db, bcrypt, migrate, swagger
 from flask_cors import CORS
+import logging
 
 def create_app():
     app = Flask(__name__)
@@ -16,6 +17,14 @@ def create_app():
     swagger.init_app(app)
     with app.app_context():
         db.create_all()  # Create tables if they do not exist
+
+    if not app.debug:
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.INFO)
+        app.logger.addHandler(stream_handler)
+
+    app.logger.setLevel(logging.INFO)
+    app.logger.info("Flask App Startup")
 
     # Register blueprints
     from blueprints.auth import auth_bp

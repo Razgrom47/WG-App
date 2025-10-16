@@ -13,12 +13,14 @@ def is_admin_of_wg(user, wg_id):
     wg = WG.query.get(wg_id)
     return wg and (user in wg.admins or g.current_user.idUser == wg.creator_id)
 
+
 def serialize_shoppinglist(shoppinglist):
     return {
         'id': shoppinglist.idShoppingList,
         'title': shoppinglist.title,
         'description': shoppinglist.description,
         'date': shoppinglist.date,
+        'is_checked':shoppinglist.is_checked,
         'creator': {'id': shoppinglist.creator_id, 'name': shoppinglist.creator.strUser if shoppinglist.creator else None},
         'wg_id': shoppinglist.wg_id,
         'items': [
@@ -30,6 +32,7 @@ def serialize_shoppinglist(shoppinglist):
             } for item in shoppinglist.items
         ]
     }
+
 
 @shopping_list_bp.route('/shoppinglist', methods=['POST'])
 @token_required

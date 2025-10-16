@@ -3,6 +3,7 @@ from extensions import db
 from models import BudgetPlanning, Cost, WG, User
 from decorators import token_required
 from datetime import datetime
+from blueprints.cost import update_budgetplanning_goal
 
 budget_planning_bp = Blueprint('budget_planning_bp', __name__)
 
@@ -292,6 +293,7 @@ def add_cost(budgetplanning_id):
         users=users
     )
     db.session.add(new_cost)
+    update_budgetplanning_goal(data['budgetplanning_id'])
     db.session.commit()
     return jsonify({'id': new_cost.idCost, 'title': new_cost.title}), 201
 
